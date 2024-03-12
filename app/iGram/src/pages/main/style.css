@@ -1,0 +1,7 @@
+
+.chatBlock{
+    display: flex;
+}
+.memberList{
+    flex-shrink: 0;
+}

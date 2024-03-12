@@ -1,0 +1,12 @@
+.addFriend button{
+    white-space: nowrap;
+    height: 100% !important;
+}
+.addFriend{
+    display: flex;
+    gap: 2px;
+    padding: 5px 1px;
+}
+.addFriend input{
+    height: 35px;
+}

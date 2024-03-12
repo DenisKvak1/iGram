@@ -1,0 +1,16 @@
+.sidePanel{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.leaveButton{
+    margin-top: 3px;
+}
+.sidePanel .loadPhotoBtn{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.filePhotoLoad2 {
+    display: none;
+}

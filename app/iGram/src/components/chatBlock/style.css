@@ -1,0 +1,119 @@
+.chat {
+    width: 100%;
+    height: 100vh;
+    background-color: rgba(167, 167, 255, 0.329);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 7% 15px 5%;
+    gap: 20px;
+}
+.chat .chatPhoto {
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+}
+.chat .chatInfoBlock {
+    min-width: 200px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.mainMessageBlock {
+    width: 100%;
+    flex-grow: 1;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+.message {
+    max-width: 400px;
+    display: flex;
+    gap: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+    align-self: end;
+}
+.messageData{
+    padding: 5px 10px 2px ;
+    background-color: rgb(252, 255, 205);
+    border-radius: 5px;
+}
+.message_date{
+    text-align: right;
+    font-size: 14px;
+    color: #424242;
+}
+.from {
+    align-self: flex-start;
+}
+.from .messageData{
+    background-color: aqua;
+}
+.sendBlock {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+}
+
+.sendBlock input {
+    width: 100%;
+}
+.sendBlock button{
+    height: 100% !important;
+    background-color: rgba(86, 139, 255, 0.699) !important;
+    border: none !important;
+    border-radius: 5px !important;
+    width: auto !important;
+}
+.message_text{
+    word-wrap: break-word;
+}
+.message_name{
+    color: rgba(0, 151, 193, 0.54);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.from .message_name{
+    color: rgba(255, 145, 0, 0.87);
+}
+.chat_name {
+    font-weight: 600;
+    font-size: 18.75px;
+    font-family: Arial;
+    white-space: nowrap;
+}
+.filePhotoLoad {
+    display: none;
+}
+.confingForm {
+    display: inline-block;
+    margin-bottom: 0;
+}
+.loadPhotoBtn{
+    display: flex;
+    justify-self: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    background-color: rgba(211, 211, 211, 0.267);
+    color: #424242;
+    border: none;
+    border-radius: 5px;
+    padding: 0 10px;
+    width: 100%;
+    height: 30px;
+    font-family: Arial;
+    white-space: nowrap;
+}
+.addToGroup{
+    white-space: nowrap;
+}
+.userPhoto{
+    border-radius: 50%;
+    height: 57px;
+    width: 57px;
+}

@@ -1,0 +1,48 @@
+.memberItem {
+    display: flex;
+    align-items: center;
+    min-width: 340px;
+    height: 72px;
+    gap: 10px;
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.chat_name {
+    font-weight: 600;
+    font-size: 18.75px;
+    font-family: Arial;
+}
+
+.memberPhotoInList {
+    height: 100%;
+    width: 60px;
+    border-radius: 50%;
+}
+
+.memberItemBlock {
+    display: flex;
+    flex-direction: column;
+}
+.last_online{
+    font-size: 17px;
+}
+.membersText{
+    font-size: 25px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 600;
+    text-align: center;
+}
+.memberList{
+    padding-top: 3px;
+    display: flex;
+    flex-direction: column;
+    width: 340px;
+    background-color: rgba(187, 187, 187, 0.144);
+    border-radius: 10px;
+    max-height: 100dvh;
+}
+.membersListBlock{
+    overflow-y: auto;
+}
