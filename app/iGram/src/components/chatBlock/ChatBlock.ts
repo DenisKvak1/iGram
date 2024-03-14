@@ -1,4 +1,4 @@
-import { IAppController, iObservable, message } from "../../../../../env/types";
+import { IAppController, iChat, iObservable, message } from "../../../../../env/types";
 import { AppController } from "../../appController";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { chatInfoBlockT, chatTemplate, messageFromT, messageMeT, sendChatBlockT } from "./template";
@@ -7,6 +7,7 @@ import { Observable } from "../../../../../env/helpers/observable";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { getGroupList } from "../../hook/getList";
 import { AddUserToGroup } from "../addUserToGroup/addUserToGroup";
+import { formatDateStringToMessage } from "../../../../../env/helpers/formatTime";
 
 export class ChatBlock {
     controller: IAppController;
@@ -31,7 +32,7 @@ export class ChatBlock {
 
         this.selectChat$.subscribe(async (chatID) => {
             if (!chatID) return;
-            getGroupList(chatID).then((chat) => {
+            getGroupList(chatID).then((chat: Array<iChat>) => {
                 let historyMessages = chat[0].history;
                 let groupName = chat[0].groupName;
                 this.chatBlock.querySelector(".chat_name").textContent = groupName;
@@ -48,10 +49,14 @@ export class ChatBlock {
         let checkEmpty = (data: string) => {
             let sendBlock = this.chatBlock.querySelector(".sendBlock");
             let chatInfoBlock = this.chatBlock.querySelector(".chatInfoBlock");
+
             if (!data) {
                 if (!sendBlock && !chatInfoBlock) return;
                 sendBlock.remove();
                 chatInfoBlock.remove();
+                while (this.messagesBlock.firstChild) {
+                    this.messagesBlock.firstChild.remove();
+                }
             } else {
                 if (sendBlock) return;
 
@@ -113,8 +118,7 @@ export class ChatBlock {
                     this.controller.server.push({
                         "command": "leaveGroup",
                         "payload": {
-                            chatID: this.selectChat$.getValue(),
-                            login: localStorage.getItem("email")
+                            chatID: this.selectChat$.getValue()
                         }
                     });
                 };
@@ -149,49 +153,31 @@ export class ChatBlock {
         let message = messageP.text;
         let messageElement: HTMLElement;
 
-        const date = new Date(messageP.timestamp);
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        const formattedTime = `${hours}:${minutes}`;
-
-        if (messageP.from.toUpperCase() === localStorage.getItem("email").toUpperCase()) {
+        if (messageP.from.email.toUpperCase() === localStorage.getItem("email").toUpperCase()) {
             messageElement = createElementFromHTML(messageMeT);
             messageElement.querySelector(".message_text").textContent = message;
         } else {
             messageElement = createElementFromHTML(messageFromT);
             messageElement.querySelector(".message_text").textContent = message;
+            const userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;
+            userPhoto.src = messageP.from.photo;
         }
+        const userName = messageElement.querySelector(".message_name");
+        userName.textContent = messageP.from.name;
 
-        let messageName = messageElement.querySelector(".message_name");
-        if (!this.userData[messageP.from])  {
-            this.controller.server.getUser(messageP.from).then((data) => {
-                this.userData[messageP.from] = {};
-                this.userData[messageP.from].photo = data.user.photo;
-                this.userData[messageP.from].user = data.user.name;
-                messageName.textContent = this.userData[messageP.from].user;
-                if(messageP.from.toUpperCase() !== localStorage.getItem("email").toUpperCase()){
-                    let userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;
-                    userPhoto.src = this.userData[messageP.from].photo
-                }
-            });
-        } else {
-            messageName.textContent = this.userData[messageP.from].user;
-            if(messageP.from.toUpperCase() !== localStorage.getItem("email").toUpperCase()){
-                let userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;
-                userPhoto.src = this.userData[messageP.from].photo
-            }
-        }
         this.controller.server.event$.subscribe((data) => {
-            if (data.command === "setUserPhoto" && data.payload.login === messageP.from) {
-                if(messageP.from.toUpperCase() !== localStorage.getItem("email").toUpperCase()){
+            if (data.command === "setUserPhoto" && data.payload.login === messageP.from.email) {
+                if (messageP.from.email.toUpperCase() !== localStorage.getItem("email").toUpperCase()) {
                     const timestamp = new Date().getTime();
                     let userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;
-                    userPhoto.src = `${userPhoto.src}?timestamp=${timestamp}`;
+                    userPhoto.src = `${data.payload.photo}?timestamp=${timestamp}`;
                 }
             }
         });
-        messageElement.querySelector(".message_date").textContent = formattedTime;
+        messageElement.querySelector(".message_date").textContent = formatDateStringToMessage(messageP.timestamp);;
 
+        this.messagesBlock.scrollTop = this.messagesBlock.scrollHeight;
         appendChild(this.messagesBlock, messageElement);
+        this.messagesBlock.scrollTop = this.messagesBlock.scrollHeight;
     }
 }

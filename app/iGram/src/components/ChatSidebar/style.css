@@ -2,7 +2,9 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
+    height: 100dvh;
 }
+
 .leaveButton{
     margin-top: 3px;
 }
@@ -13,4 +15,7 @@
 }
 .filePhotoLoad2 {
     display: none;
+}
+.leaveButton, .friendListButton, .createGroup, .filePhotoLoad2 {
+    flex-shrink: 0;
 }

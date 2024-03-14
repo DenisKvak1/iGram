@@ -1,4 +1,4 @@
-import { IAppController, iModal, iObservable } from "../../../../../env/types";
+import { IAppController, iModal, iObservable, iUser } from "../../../../../env/types";
 import { AppController } from "../../appController";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { buttonCreateGroupMenuTemplate, createGroupItemT, createGroupMenuT, friendsEmptyCGT } from "./template";
@@ -13,10 +13,10 @@ export class CreateGroupBlock {
     modal: iModal
     friendsList: HTMLElement
     openButton: HTMLElement
-    private list$: iObservable<Array<string>>
+    private list$: iObservable<Array<iUser>>
     private listUserToGroup: Array<string>
     constructor() {
-        this.list$ = new Observable<Array<string>>([])
+        this.list$ = new Observable<Array<iUser>>([])
         this.controller = AppController.getInstance()
         this.listUserToGroup = []
 
@@ -69,28 +69,28 @@ export class CreateGroupBlock {
     createElement(){
         return this.openButton
     }
-    setList(friends:Array<string>){
+    setList(friends:Array<iUser>){
         this.friendsList.innerHTML = ''
         friends.forEach((item)=>{
             this.pushList(item)
         })
         this.list$.next(friends)
     }
-    pushList(friend:string){
+    pushList(friend:iUser){
         const friendBlock = createElementFromHTML(createGroupItemT)
         let chatName = friendBlock.querySelector('.chat_name') as HTMLElement
         let checkBox = friendBlock.querySelector('input')
         const photo = friendBlock.querySelector('.chatPhoto') as HTMLImageElement
-        this.controller.server.getUser(friend).then((data)=>photo.src = data.user.photo)
+        photo.src = friend.photo
         checkBox.onchange = (event)=>{
             let element = event.target as HTMLInputElement
             if(element.checked){
-                this.listUserToGroup.push(friend)
+                this.listUserToGroup.push(friend.email)
             } else {
-                this.listUserToGroup.splice(this.listUserToGroup.indexOf(friend), 1)
+                this.listUserToGroup.splice(this.listUserToGroup.indexOf(friend.email), 1)
             }
         }
-        chatName.textContent = friend
+        chatName.textContent = friend.email
 
         let list = this.list$.getValue()
         list.push(friend)

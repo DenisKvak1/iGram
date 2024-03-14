@@ -1,4 +1,4 @@
-import { IAppController, iModal, iObservable } from "../../../../../env/types";
+import { IAppController, iModal, iObservable, iUser } from "../../../../../env/types";
 import { Observable } from "../../../../../env/helpers/observable";
 import { AppController } from "../../appController";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
@@ -12,13 +12,13 @@ export class AddUserToGroup {
     modal: iModal;
     friendsList: HTMLElement;
     openButton: HTMLElement;
-    private list$: iObservable<Array<string>>;
+    private list$: iObservable<Array<iUser>>;
     private listUserToGroup: Array<string>;
     selectChat$: iObservable<string>;
 
     constructor(selectChat: iObservable<string>) {
         this.selectChat$ = selectChat;
-        this.list$ = new Observable<Array<string>>([]);
+        this.list$ = new Observable<Array<iUser>>([]);
         this.controller = AppController.getInstance();
         this.listUserToGroup = [];
 
@@ -37,7 +37,7 @@ export class AddUserToGroup {
         openButton.onclick = () => {
             getFriendsList().then((data) => {
                 getGroupList(this.selectChat$.getValue()).then((chat)=>{
-                    data= data.filter((item)=>!chat[0].members.includes(item))
+                    data= data.filter((item)=>!chat[0].members.some((element)=>element.email === item.email))
                     return data ? this.setList(data) : null
                 })
             });
@@ -79,29 +79,29 @@ export class AddUserToGroup {
     createElement(){
         return this.openButton
     }
-    setList(friends:Array<string>){
+    setList(friends:Array<iUser>){
         this.friendsList.innerHTML = ''
         friends.forEach((item)=>{
             this.pushList(item)
         })
         this.list$.next(friends)
     }
-    pushList(friend:string){
+    pushList(friend:iUser){
         const friendBlock = createElementFromHTML(addToGroupItemT)
         let chatName = friendBlock.querySelector('.chat_name') as HTMLElement
         let checkBox = friendBlock.querySelector('input')
         const photo = friendBlock.querySelector('.chatPhoto') as HTMLImageElement
-        this.controller.server.getUser(friend).then((data)=>photo.src = data.user.photo)
+        photo.src = friend.photo
 
         checkBox.onchange = (event)=>{
             let element = event.target as HTMLInputElement
             if(element.checked){
-                this.listUserToGroup.push(friend)
+                this.listUserToGroup.push(friend.email)
             } else {
-                this.listUserToGroup.splice(this.listUserToGroup.indexOf(friend), 1)
+                this.listUserToGroup.splice(this.listUserToGroup.indexOf(friend.email), 1)
             }
         }
-        chatName.textContent = friend
+        chatName.textContent = friend.email
 
         let list = this.list$.getValue()
         list.push(friend)

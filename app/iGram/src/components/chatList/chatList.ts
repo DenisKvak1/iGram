@@ -1,4 +1,4 @@
-import { iChat, IAppController, iObservable } from "../../../../../env/types";
+import { iChat, IAppController, iObservable, message } from "../../../../../env/types";
 import { AppController } from "../../appController";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
@@ -20,12 +20,15 @@ export class ChatList {
         this.selectChat$ = new Observable<string>()
 
         this.init()
+    }
+    init(){
+        this.chatListContainer = createElementFromHTML(chatListT)
         getGroupList().then((data)=>this.setList(sortChatsByNewest(data)))
         this.controller.server.event$.subscribe((data)=>{
             if(data.command === "groupCreated"){
                 this.pushList(data.payload.group)
             } else if (data.command === "leaveGroup") {
-                if(this.selectChat$.getValue() === data.payload.chatID && localStorage.getItem('email') === data.payload.login){
+                if(this.selectChat$.getValue() === data.payload.chatID && localStorage.getItem('email') === data.payload.user.email){
                     let list = this.list$.getValue();
                     list = list.filter((item) => item.id !== data.payload.chatID);
                     this.setList(list);
@@ -39,18 +42,20 @@ export class ChatList {
                 }
             }
             else if(data.command === "message"){
-                this.setList(sortChatsByNewest(this.list$.getValue()))
+                let list = this.list$.getValue()
+                let chatI = this.list$.getValue().findIndex((item)=>item.id === data.payload.to)
+
+                list[chatI].history.push(data.payload as message)
+                this.setList(sortChatsByNewest(list))
             }
         })
-    }
-    init(){
-        this.chatListContainer = createElementFromHTML(chatListT)
     }
     createElement(){
         return this.chatListContainer
     }
     setList(chats:Array<iChat>){
         this.chatListContainer.innerHTML = ''
+        this.list$.setValue([])
         chats.forEach((item)=>{
             this.pushList(item)
         })
@@ -77,7 +82,7 @@ export class ChatList {
                 last_message.textContent = data.payload.text
             } else if(data.command === "setGroupPhoto" && data.payload.chatID === chat.id){
                 const timestamp = new Date().getTime();
-                avatar.src = `${avatar.src}?timestamp=${timestamp}`
+                avatar.src = `${data.payload.photo}?timestamp=${timestamp}`
             }
         })
         let list = this.list$.getValue()

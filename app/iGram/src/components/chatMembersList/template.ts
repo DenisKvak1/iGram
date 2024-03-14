@@ -11,7 +11,10 @@ export const memberElement = `
         <img src="/" alt="" class= "memberPhotoInList">
         <div class="memberItemBlock">
             <span class="chat_name"></span>
-            <span class="last_online">Был онлайн в прошлом веке </span>
+            <div class="last_onlineCont">
+                <span class="last_onlineSign">был(а)&nbsp;</span>
+                <span class="last_online"></span>
+            <div>
         </div>
     </div>
 `

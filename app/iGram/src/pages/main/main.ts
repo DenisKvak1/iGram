@@ -7,6 +7,7 @@ import { ChatSideBar } from "../../components/ChatSidebar/ChatSideBar";
 import { AppController } from "../../appController";
 import { ChatBlock } from "../../components/chatBlock/ChatBlock";
 import { ChatMembersList } from "../../components/chatMembersList/chatMembersList";
+import { getGroupList } from "../../hook/getList";
 export class MainPage{
     controller: IAppController
     constructor() {
@@ -32,15 +33,22 @@ export class MainPage{
                 mainPage.appendChild(chatSidePanel.createElement())
                 mainPage.appendChild(chatBlock.getElement())
                 chatSidePanel.selectChat$.subscribe((data)=>{
-                    membersList.getElement().remove()
-                    if(data){
-                        chatBlock.getElement().insertAdjacentElement('afterend', membersList.getElement())
+                    if(!data) {
+                        membersList.getElement().remove()
+                        return
                     }
+                    getGroupList(data).then((chat)=>{
+                        if(!chat) return
+                        chatBlock.getElement().insertAdjacentElement('afterend', membersList.getElement())
+                    })
                 })
 
                 if(chatID) {
-                    chatSidePanel.selectChat$.next(chatID);
-                    chatBlock.getElement().insertAdjacentElement('afterend', membersList.getElement())
+                    getGroupList(chatID).then((chat)=>{
+                        if(!chat) return
+                        chatBlock.getElement().insertAdjacentElement('afterend', membersList.getElement())
+                        chatSidePanel.selectChat$.next(chatID);
+                    })
                 }
             }
         }

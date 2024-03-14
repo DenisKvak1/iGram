@@ -44,12 +44,14 @@ export type addUserT = {
 export type iUser = {
     email: string
     name: string
-    friends: Array<iUser>
+    friends: Array<string>
+    photo: string
+    lastActivity: string
 }
 export type iChat = {
     id: string
     groupName: string,
-    members: Array<string>
+    members: Array<iUser>
     history: Array<message>
     photo?: string
 }
@@ -57,7 +59,7 @@ export type iChat = {
 export type serverMessage = {
     command: string
     payload: {
-        from?: string
+        from?: iUser | string
         to?: string
         text?: string
         login?: string
@@ -67,11 +69,12 @@ export type serverMessage = {
         accept?: boolean
         chatID?: string
         timestamp?: string
-        photo?: ArrayBuffer
+        photo?: ArrayBuffer,
+        user?: iUser
     }
 }
 export type message = {
-    from: string,
+    from: iUser,
     fromName:string
     to?: string,
     text: string,
