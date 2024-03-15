@@ -13,7 +13,7 @@ export class AppController implements IAppController {
     private constructor() {
         this.root = document.getElementById('app');
         this.isAuth$ = new Observable<boolean>();
-        this.server = new Server('http://192.168.0.161:3000', 'ws:///192.168.0.161:3000', this);
+        this.server = new Server('http://127.0.0.1:3000', 'ws:///127.0.0.1:3000', this);
         this.server.checkAuth().then((resp: serverResponse) => {
             this.isAuth$.next(resp.status === 'OK');
         });
