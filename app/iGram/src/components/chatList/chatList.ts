@@ -35,7 +35,7 @@ export class ChatList {
                     this.selectChat$.next(null)
                 }
             } else if(data.command === "friendAddedToGroup"){
-                if(localStorage.getItem('email') === data.payload.login){
+                if(localStorage.getItem('email') === data.payload.user.email){
                     getGroupList(data.payload.chatID).then((data)=>{
                         this.pushList(data[0])
                     })

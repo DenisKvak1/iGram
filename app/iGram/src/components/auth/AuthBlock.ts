@@ -6,12 +6,13 @@ import { AppController } from "../../appController";
 
 export class AuthBlock {
     controller: IAppController;
-
+    private AuthBlock:HTMLElement
     constructor() {
         this.controller = AppController.getInstance();
-    }
 
-    createAuthBlock() {
+        this.init()
+    }
+    init(){
         let authBlock = createElementFromHTML(AuthBlockTemplate);
         let render = (isAuth: boolean) => {
             let loginBlock: any = new AuthFormFabric("login", this.controller.server);
@@ -28,6 +29,9 @@ export class AuthBlock {
             render(isAuth);
         });
         render(this.controller.isAuth$.getValue());
-        return authBlock;
+        this.AuthBlock = authBlock
+    }
+    createAuthBlock() {
+        return this.AuthBlock
     }
 }

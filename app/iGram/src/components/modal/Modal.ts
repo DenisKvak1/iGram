@@ -25,9 +25,9 @@ export class Modal implements iModal {
 
     let optionsFunc: iModalOptionsFunc = {
       width: (width: number) => this.modal.style.width = `${width}`,
-      maxWidth: (maxWidth: number) => this.modal.style.maxWidth = `${maxWidth}`,
+      maxWidth: (maxWidth: string) => this.modal.style.maxWidth = maxWidth,
       height: (height: number) => this.modal.style.height = `${height}`,
-      maxHeight: (maxHeight: number) => this.modal.style.width = `${maxHeight}`,
+      maxHeight: (maxHeight: string) => this.modal.style.maxHeight = maxHeight,
       bgColor: (color: string) => this.modal.style.backgroundColor = `${color}`,
       bgOverlayColor: (color: number) => this.overlay.style.backgroundColor = `${color}`,
       padding: (padding: string) => this.modal.style.padding = padding,

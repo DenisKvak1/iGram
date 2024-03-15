@@ -28,8 +28,7 @@ export class ListInvitedFriends {
 
         this.friendsList = friendsListBlock.querySelector(".friendsList") as HTMLElement;
         this.modal = new Modal(friendsListBlock);
-
-        this.modal.setOptions({ padding: "0px" });
+        this.modal.setOptions({maxWidth: '95%', padding: "0px"})
         openButton.onclick = () => this.modal.open();
         this.openButton = openButton;
 
@@ -75,7 +74,7 @@ export class ListInvitedFriends {
         memberPhoto.src = friend.photo;
 
         this.controller.server.event$.subscribe((data) => {
-            if (data.command === "setUserPhoto" && data.payload.login === friend.email) {
+            if (data.command === "setUserPhoto" && data.payload?.user?.email === friend.email) {
                 const timestamp = new Date().getTime();
                 memberPhoto.src = `${data.payload.photo}?timestamp=${timestamp}`;
             }
@@ -108,7 +107,7 @@ export class ListInvitedFriends {
             this.list$.next(list);
         };
         let chatName = friendBlock.querySelector(".chat_name") as HTMLElement;
-        chatName.textContent = friend.email;
+        chatName.textContent = friend.name;
 
         let list = this.list$.getValue();
         list.push(friend);

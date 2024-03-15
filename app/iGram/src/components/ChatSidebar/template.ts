@@ -6,6 +6,7 @@ export const sidePanelTemplate = `
 export const leaveBtnT = `
     <button class="leaveButton">Выйти</button>
 `
+
 export const loadPhotoT = `
     <form class="confingForm">
             <input type="file" id="filePhotoLoad2" class="filePhotoLoad2" accept="jpg, .jpeg, .png" size="1000000"/>

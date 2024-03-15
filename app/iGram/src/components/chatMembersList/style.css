@@ -37,14 +37,30 @@
     padding-top: 3px;
     display: flex;
     flex-direction: column;
-    width: 340px;
+    width: 100%;
     background-color: rgba(187, 187, 187, 0.144);
     border-radius: 10px;
-    max-height: 100dvh;
+    height: 100dvh;
 }
 .membersListBlock{
     overflow-y: auto;
 }
 .last_onlineCont{
     display: flex;
+}
+.memberBlockInfo{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+@media (min-width: 1200px) {
+    .toChat{
+        display: none;
+    }
+    .memberList{
+        width: auto;
+    }
 }

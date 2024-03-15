@@ -16,11 +16,16 @@ export class ChatBlock {
     messagesBlock: HTMLElement;
     selectChat$: iObservable<string>;
     userData: Record<string, any>;
+    toChatList$: iObservable<null>
+    toMemberList$: iObservable<null>
+
 
     constructor(selectChat: iObservable<string>) {
         this.selectChat$ = selectChat;
         this.controller = AppController.getInstance();
         this.messages$ = new Observable<Array<message>>([]);
+        this.toChatList$ = new Observable()
+        this.toMemberList$ = new Observable()
         this.userData = {};
 
         this.init();
@@ -35,7 +40,11 @@ export class ChatBlock {
             getGroupList(chatID).then((chat: Array<iChat>) => {
                 let historyMessages = chat[0].history;
                 let groupName = chat[0].groupName;
-                this.chatBlock.querySelector(".chat_name").textContent = groupName;
+                let chatNameElement = this.chatBlock.querySelector(".chat_name") as HTMLElement
+                chatNameElement.textContent = groupName;
+                chatNameElement.onclick = ()=>{
+                    this.toMemberList$.next()
+                }
                 this.setMessages(historyMessages);
             });
         });
@@ -67,6 +76,10 @@ export class ChatBlock {
                 const uploadPhoto = toChatInfoBlock.querySelector(".filePhotoLoad") as HTMLInputElement;
                 const leaveGroup = toChatInfoBlock.querySelector(".leaveGroup") as HTMLButtonElement;
                 const addToGruup = new AddUserToGroup(this.selectChat$);
+                const toChatListBtn = toChatInfoBlock.querySelector('.toChat') as HTMLButtonElement
+                toChatListBtn.onclick = ()=>{
+                    this.toChatList$.next()
+                }
                 leaveGroup.insertAdjacentElement("beforebegin", addToGruup.createElement());
 
                 uploadPhoto.onchange = () => {
@@ -115,6 +128,7 @@ export class ChatBlock {
                     sendMessage();
                 };
                 leaveGroup.onclick = () => {
+                    this.toChatList$.next()
                     this.controller.server.push({
                         "command": "leaveGroup",
                         "payload": {
@@ -166,7 +180,7 @@ export class ChatBlock {
         userName.textContent = messageP.from.name;
 
         this.controller.server.event$.subscribe((data) => {
-            if (data.command === "setUserPhoto" && data.payload.login === messageP.from.email) {
+            if (data.command === "setUserPhoto" && data.payload?.user?.email === messageP.from.email) {
                 if (messageP.from.email.toUpperCase() !== localStorage.getItem("email").toUpperCase()) {
                     const timestamp = new Date().getTime();
                     let userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;

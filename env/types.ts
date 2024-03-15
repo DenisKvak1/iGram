@@ -115,9 +115,9 @@ export type iModal = {
 }
 export type IModalOptions = {
     width?: number;
-    maxWidth?: number;
+    maxWidth?: string
     height?: number;
-    maxHeight?: number;
+    maxHeight?: string
     bgColor?: string;
     bgOverlayColor?: string;
     padding?: string
@@ -126,9 +126,9 @@ export type IModalOptions = {
 };
 export type iModalOptionsFunc = {
     width?: (width: number) => void;
-    maxWidth?: (maxWidth: number) => void;
+    maxWidth?: (maxWidth: string) => void;
     height?: (height: number) => void;
-    maxHeight?: (maxHeight: number) => void;
+    maxHeight?: (maxHeight: string) => void;
     bgColor?: (color: string) => void;
     bgOverlayColor?: (color: number) => void;
     [key: string]: (argument: string | number) => void

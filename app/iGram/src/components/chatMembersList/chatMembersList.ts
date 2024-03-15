@@ -13,6 +13,7 @@ export class ChatMembersList {
     containerMembersList: HTMLElement;
     membersListBlock: HTMLElement;
     selectChat$: iObservable<string>;
+    toChat$: iObservable<null>
     private list$: iObservable<Array<iUser>>;
     private timeUpdater: Array<NodeJS.Timeout>;
 
@@ -20,6 +21,7 @@ export class ChatMembersList {
         this.selectChat$ = selectChat;
         this.controller = AppController.getInstance();
         this.list$ = new Observable<Array<iUser>>([]);
+        this.toChat$ = new Observable()
         this.timeUpdater = []
 
         this.init();
@@ -28,7 +30,10 @@ export class ChatMembersList {
     init() {
         this.containerMembersList = createElementFromHTML(containerMembersList);
         this.membersListBlock = this.containerMembersList.querySelector(".membersListBlock");
-
+        const backArrow = this.containerMembersList.querySelector('.toChat') as HTMLButtonElement
+        backArrow.onclick = ()=>{
+            this.toChat$.next()
+        }
         this.selectChat$.subscribe((chatID) => {
             getGroupList(chatID).then((Chats) => {
                 this.setList(Chats[0].members);
@@ -87,9 +92,10 @@ export class ChatMembersList {
         }
 
         this.controller.server.event$.subscribe((data) => {
-            if (data.command === "setUserPhoto" && data.payload.login === member.email) {
+            if (data.command === "setUserPhoto" && data.payload?.user?.email === member.email) {
                 const timestamp = new Date().getTime();
                 memberPhoto.src = `${data.payload.photo}?timestamp=${timestamp}`;
+                console.log(memberPhoto.src)
             } else if (data.command === "activity" && member.email === data.payload.user.email) {
                 member.lastActivity = data.payload.user.lastActivity;
 

@@ -90,7 +90,7 @@ export class CreateGroupBlock {
                 this.listUserToGroup.splice(this.listUserToGroup.indexOf(friend.email), 1)
             }
         }
-        chatName.textContent = friend.email
+        chatName.textContent = friend.name
 
         let list = this.list$.getValue()
         list.push(friend)
