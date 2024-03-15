@@ -94,8 +94,7 @@ export class ChatMembersList {
         this.controller.server.event$.subscribe((data) => {
             if (data.command === "setUserPhoto" && data.payload?.user?.email === member.email) {
                 const timestamp = new Date().getTime();
-                memberPhoto.src = `${data.payload.photo}?timestamp=${timestamp}`;
-                console.log(memberPhoto.src)
+                memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
             } else if (data.command === "activity" && member.email === data.payload.user.email) {
                 member.lastActivity = data.payload.user.lastActivity;
 

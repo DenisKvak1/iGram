@@ -76,7 +76,7 @@ export class ListInvitedFriends {
         this.controller.server.event$.subscribe((data) => {
             if (data.command === "setUserPhoto" && data.payload?.user?.email === friend.email) {
                 const timestamp = new Date().getTime();
-                memberPhoto.src = `${data.payload.photo}?timestamp=${timestamp}`;
+                memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
             }
         });
 

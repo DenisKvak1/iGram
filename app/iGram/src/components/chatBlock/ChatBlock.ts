@@ -184,7 +184,7 @@ export class ChatBlock {
                 if (messageP.from.email.toUpperCase() !== localStorage.getItem("email").toUpperCase()) {
                     const timestamp = new Date().getTime();
                     let userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;
-                    userPhoto.src = `${data.payload.photo}?timestamp=${timestamp}`;
+                    userPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
                 }
             }
         });
