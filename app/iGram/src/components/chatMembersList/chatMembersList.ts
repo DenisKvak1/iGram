@@ -16,6 +16,7 @@ export class ChatMembersList {
     toChat$: iObservable<null>
     private list$: iObservable<Array<iUser>>;
     private timeUpdater: Array<NodeJS.Timeout>;
+    eventSList: Array<{unsubscribe: ()=>void}>
 
     constructor(selectChat: iObservable<string>) {
         this.selectChat$ = selectChat;
@@ -23,6 +24,7 @@ export class ChatMembersList {
         this.list$ = new Observable<Array<iUser>>([]);
         this.toChat$ = new Observable()
         this.timeUpdater = []
+        this.eventSList = []
 
         this.init();
     }
@@ -58,6 +60,9 @@ export class ChatMembersList {
         this.membersListBlock.innerHTML = "";
         this.timeUpdater.forEach((item)=> clearInterval(item))
         this.timeUpdater = []
+        this.eventSList.forEach((item)=>item.unsubscribe())
+        this.eventSList = []
+
         members.forEach((item) => {
             this.pushList(item);
         });
@@ -91,7 +96,7 @@ export class ChatMembersList {
             this.timeUpdater.push(intervalId);
         }
 
-        this.controller.server.event$.subscribe((data) => {
+        const subscribe = this.controller.server.event$.subscribe((data) => {
             if (data.command === "setUserPhoto" && data.payload?.user?.email === member.email) {
                 const timestamp = new Date().getTime();
                 memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
@@ -107,6 +112,7 @@ export class ChatMembersList {
                 }
             }
         });
+        this.eventSList.push(subscribe)
 
         let list = this.list$.getValue();
         list.push(member);

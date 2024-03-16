@@ -13,11 +13,13 @@ export class ChatList {
     chatListContainer: HTMLElement
     selectChat$: iObservable<string>
     private list$: iObservable<Array<iChat>>
+    eventSList: Array<{unsubscribe: ()=>void}>
 
     constructor() {
         this.controller = AppController.getInstance()
         this.list$ = new Observable<Array<iChat>>([])
         this.selectChat$ = new Observable<string>()
+        this.eventSList = []
 
         this.init()
     }
@@ -56,6 +58,9 @@ export class ChatList {
     setList(chats:Array<iChat>){
         this.chatListContainer.innerHTML = ''
         this.list$.setValue([])
+        this.eventSList.forEach((item)=>item.unsubscribe())
+        this.eventSList = []
+
         chats.forEach((item)=>{
             this.pushList(item)
         })
@@ -77,7 +82,8 @@ export class ChatList {
         chatName.textContent = chat.groupName
         const latestMessage = chat.history.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
         last_message.textContent = latestMessage ? latestMessage.text : '';
-        this.controller.server.event$.subscribe((data)=>{
+
+        const subscribe = this.controller.server.event$.subscribe((data)=>{
             if(data.command === "message" && data.payload.to === chat.id){
                 last_message.textContent = data.payload.text
             } else if(data.command === "setGroupPhoto" && data.payload.chatID === chat.id){
@@ -85,6 +91,8 @@ export class ChatList {
                 avatar.src = `${data.payload.photo}?timestamp=${timestamp}`
             }
         })
+        this.eventSList.push(subscribe)
+
         let list = this.list$.getValue()
         list.push(chat)
         this.list$.next(list)

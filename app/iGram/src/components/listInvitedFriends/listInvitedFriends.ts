@@ -14,10 +14,12 @@ export class ListInvitedFriends {
     friendsList: HTMLElement;
     openButton: HTMLElement;
     private list$: iObservable<Array<iUser>>;
+    eventSList: Array<{unsubscribe: ()=>void}>
 
     constructor() {
         this.list$ = new Observable<Array<iUser>>([]);
         this.controller = AppController.getInstance();
+        this.eventSList = []
 
         this.init();
     }
@@ -60,6 +62,9 @@ export class ListInvitedFriends {
 
     setList(friends: Array<iUser>) {
         this.friendsList.innerHTML = "";
+        this.eventSList.forEach((item)=>item.unsubscribe())
+        this.eventSList = []
+
         friends.forEach((item) => {
             this.pushList(item);
         });
@@ -73,12 +78,13 @@ export class ListInvitedFriends {
         const memberPhoto = friendBlock.querySelector(".chatPhoto") as HTMLImageElement;
         memberPhoto.src = friend.photo;
 
-        this.controller.server.event$.subscribe((data) => {
+        const subscribe = this.controller.server.event$.subscribe((data) => {
             if (data.command === "setUserPhoto" && data.payload?.user?.email === friend.email) {
                 const timestamp = new Date().getTime();
                 memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
             }
         });
+        this.eventSList.push(subscribe)
 
         acceptBtn.onclick = () => {
             this.controller.server.push({

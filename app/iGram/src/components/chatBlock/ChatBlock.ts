@@ -15,10 +15,9 @@ export class ChatBlock {
     messages$: iObservable<Array<message>>;
     messagesBlock: HTMLElement;
     selectChat$: iObservable<string>;
-    userData: Record<string, any>;
     toChatList$: iObservable<null>
     toMemberList$: iObservable<null>
-
+    eventSList: Array<{unsubscribe: ()=>void}>
 
     constructor(selectChat: iObservable<string>) {
         this.selectChat$ = selectChat;
@@ -26,7 +25,7 @@ export class ChatBlock {
         this.messages$ = new Observable<Array<message>>([]);
         this.toChatList$ = new Observable()
         this.toMemberList$ = new Observable()
-        this.userData = {};
+        this.eventSList = []
 
         this.init();
     }
@@ -154,6 +153,9 @@ export class ChatBlock {
         this.messages$.next(messages);
 
         this.messagesBlock.innerHTML = "";
+        this.eventSList.forEach((item)=>item.unsubscribe())
+        this.eventSList = []
+        
         messages.forEach((item) => {
             this.pushMessage(item);
         });
@@ -179,7 +181,7 @@ export class ChatBlock {
         const userName = messageElement.querySelector(".message_name");
         userName.textContent = messageP.from.name;
 
-        this.controller.server.event$.subscribe((data) => {
+        const subscribe = this.controller.server.event$.subscribe((data) => {
             if (data.command === "setUserPhoto" && data.payload?.user?.email === messageP.from.email) {
                 if (messageP.from.email.toUpperCase() !== localStorage.getItem("email").toUpperCase()) {
                     const timestamp = new Date().getTime();
@@ -188,6 +190,7 @@ export class ChatBlock {
                 }
             }
         });
+        this.eventSList.push(subscribe)
         messageElement.querySelector(".message_date").textContent = formatDateStringToMessage(messageP.timestamp);;
 
         this.messagesBlock.scrollTop = this.messagesBlock.scrollHeight;
