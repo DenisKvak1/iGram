@@ -1,4 +1,4 @@
-import { IAppController, iModal, iObservable, iUser } from "../../../../../env/types";
+import { IAppController, iModal, iObservable, UserInfo } from "../../../../../env/types";
 import { AppController } from "../../appController";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { buttonCreateGroupMenuTemplate, createGroupItemT, createGroupMenuT, friendsEmptyCGT } from "./template";
@@ -13,10 +13,10 @@ export class CreateGroupBlock {
     modal: iModal
     friendsList: HTMLElement
     openButton: HTMLElement
-    private list$: iObservable<Array<iUser>>
+    private list$: iObservable<Array<UserInfo>>
     private listUserToGroup: Array<string>
     constructor() {
-        this.list$ = new Observable<Array<iUser>>([])
+        this.list$ = new Observable<Array<UserInfo>>([])
         this.controller = AppController.getInstance()
         this.listUserToGroup = []
 
@@ -69,14 +69,14 @@ export class CreateGroupBlock {
     createElement(){
         return this.openButton
     }
-    setList(friends:Array<iUser>){
+    setList(friends:Array<UserInfo>){
         this.friendsList.innerHTML = ''
         friends.forEach((item)=>{
             this.pushList(item)
         })
         this.list$.next(friends)
     }
-    pushList(friend:iUser){
+    pushList(friend:UserInfo){
         const friendBlock = createElementFromHTML(createGroupItemT)
         let chatName = friendBlock.querySelector('.chat_name') as HTMLElement
         let checkBox = friendBlock.querySelector('input')

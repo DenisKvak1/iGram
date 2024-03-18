@@ -1,7 +1,7 @@
 import { AppController } from "../appController";
-import { iChat, iUser } from "../../../../env/types";
+import { iChat, UserInfo } from "../../../../env/types";
 
-export async function getFriendsInviteList(): Promise<Array<iUser>>{
+export async function getFriendsInviteList(): Promise<Array<UserInfo>>{
     let controller = AppController.getInstance()
     let response = await controller.server.getFriendsInvites()
     if(response.status === "OK"){
@@ -9,9 +9,9 @@ export async function getFriendsInviteList(): Promise<Array<iUser>>{
     }
     return undefined
 }
-export async function getFriendsList(): Promise<Array<iUser>>{
+export async function getFriendsList(): Promise<Array<UserInfo>>{
     let controller = AppController.getInstance()
-    let response = await controller.server.getFriends()
+    let response = await controller.server.getFriendsList()
     if(response.status === "OK"){
         return response.requests
     }

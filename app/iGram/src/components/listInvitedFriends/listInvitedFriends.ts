@@ -1,4 +1,4 @@
-import { IAppController,  iModal, iObservable, iUser } from "../../../../../env/types";
+import { IAppController,  iModal, iObservable, UserInfo } from "../../../../../env/types";
 import { AppController } from "../../appController";
 import "./style.css";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
@@ -13,11 +13,11 @@ export class ListInvitedFriends {
     modal: iModal;
     friendsList: HTMLElement;
     openButton: HTMLElement;
-    private list$: iObservable<Array<iUser>>;
+    private list$: iObservable<Array<UserInfo>>;
     eventSList: Array<{unsubscribe: ()=>void}>
 
     constructor() {
-        this.list$ = new Observable<Array<iUser>>([]);
+        this.list$ = new Observable<Array<UserInfo>>([]);
         this.controller = AppController.getInstance();
         this.eventSList = []
 
@@ -51,7 +51,7 @@ export class ListInvitedFriends {
         getFriendsInviteList().then((data) => data ? this.setList(data) : null);
         this.controller.server.event$.subscribe((data) => {
             if (data.command === "friendRequest") {
-                this.pushList(data.payload.from as iUser);
+                this.pushList(data.payload.from as UserInfo);
             }
         });
     }
@@ -60,7 +60,7 @@ export class ListInvitedFriends {
         return this.openButton;
     }
 
-    setList(friends: Array<iUser>) {
+    setList(friends: Array<UserInfo>) {
         this.friendsList.innerHTML = "";
         this.eventSList.forEach((item)=>item.unsubscribe())
         this.eventSList = []
@@ -71,7 +71,7 @@ export class ListInvitedFriends {
         this.list$.next(friends);
     }
 
-    pushList(friend: iUser) {
+    pushList(friend: UserInfo) {
         const friendBlock = createElementFromHTML(friendTemplate);
         const acceptBtn = friendBlock.querySelector(".accept_friend") as HTMLButtonElement;
         const rejectBtn = friendBlock.querySelector(".reject_friend") as HTMLButtonElement;

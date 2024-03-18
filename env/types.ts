@@ -12,9 +12,9 @@ export type iServer = {
     event$: iObservable<serverMessage>
     push: (message: serverMessage)=>void
     register: (loginValue: loginValue, options: registerOptions) => Promise<serverResponse>
-    getUser: (login:string)=> Promise<serverResponse>
+    getUserInfo: (login:string)=> Promise<serverResponse>
     getFriendsInvites: ()=>Promise<serverResponse>
-    getFriends: ()=>Promise<serverResponse>
+    getFriendsList: ()=>Promise<serverResponse>
     login: (loginValue: loginValue) => Promise<serverResponse>
     checkAuth: ()=> Promise<serverResponse>
     getChats:(id?:string)=> Promise<serverResponse>
@@ -41,7 +41,7 @@ export type addUserT = {
     login: string
     chatID:string
 }
-export type iUser = {
+export type UserInfo = {
     email: string
     name: string
     friends: Array<string>
@@ -51,7 +51,7 @@ export type iUser = {
 export type iChat = {
     id: string
     groupName: string,
-    members: Array<iUser>
+    members: Array<UserInfo>
     history: Array<message>
     photo?: string
 }
@@ -59,7 +59,7 @@ export type iChat = {
 export type serverMessage = {
     command: string
     payload: {
-        from?: iUser | string
+        from?: UserInfo | string
         to?: string
         text?: string
         login?: string
@@ -70,11 +70,11 @@ export type serverMessage = {
         chatID?: string
         timestamp?: string
         photo?: ArrayBuffer,
-        user?: iUser
+        user?: UserInfo
     }
 }
 export type message = {
-    from: iUser,
+    from: UserInfo,
     fromName:string
     to?: string,
     text: string,

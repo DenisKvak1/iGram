@@ -1,4 +1,4 @@
-import { IAppController, iObservable, iUser } from "../../../../../env/types";
+import { IAppController, iObservable, UserInfo } from "../../../../../env/types";
 import { AppController } from "../../appController";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
@@ -14,14 +14,14 @@ export class ChatMembersList {
     membersListBlock: HTMLElement;
     selectChat$: iObservable<string>;
     toChat$: iObservable<null>
-    private list$: iObservable<Array<iUser>>;
+    private list$: iObservable<Array<UserInfo>>;
     private timeUpdater: Array<NodeJS.Timeout>;
     eventSList: Array<{unsubscribe: ()=>void}>
 
     constructor(selectChat: iObservable<string>) {
         this.selectChat$ = selectChat;
         this.controller = AppController.getInstance();
-        this.list$ = new Observable<Array<iUser>>([]);
+        this.list$ = new Observable<Array<UserInfo>>([]);
         this.toChat$ = new Observable()
         this.timeUpdater = []
         this.eventSList = []
@@ -56,7 +56,7 @@ export class ChatMembersList {
         return this.containerMembersList;
     }
 
-    setList(members: Array<iUser>) {
+    setList(members: Array<UserInfo>) {
         this.membersListBlock.innerHTML = "";
         this.timeUpdater.forEach((item)=> clearInterval(item))
         this.timeUpdater = []
@@ -69,7 +69,7 @@ export class ChatMembersList {
         this.list$.next(members);
     }
 
-    pushList(member: iUser) {
+    pushList(member: UserInfo) {
         const chatBlock = createElementFromHTML(memberElement);
         const memberName = chatBlock.querySelector(".chat_name");
         const memberPhoto = chatBlock.querySelector(".memberPhotoInList") as HTMLImageElement;
