@@ -1,30 +1,40 @@
-import { IAppController,  iModal, iObservable, UserInfo } from "../../../../../env/types";
-import { AppController } from "../../appController";
+import {
+    componentsEvent,
+    componentsEvent_COMMANDS,
+    externalData,
+    externalEventType,
+    iModal,
+    iObservable,
+    requestData,
+    requestData_COMMANDS,
+    UserInfo
+} from "../../../../../env/types";
 import "./style.css";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { Modal } from "../modal/Modal";
 import { buttonOpenListInvitedTemplate, friendsEmpty, friendsListTemplate, friendTemplate } from "./template";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { Observable } from "../../../../../env/helpers/observable";
-import { getFriendsInviteList } from "../../hook/getList";
 
 export class ListInvitedFriends {
-    controller: IAppController;
     modal: iModal;
     friendsList: HTMLElement;
     openButton: HTMLElement;
     private list$: iObservable<Array<UserInfo>>;
     eventSList: Array<{unsubscribe: ()=>void}>
-
+    requestData$: iObservable<requestData>
+    event$: iObservable<componentsEvent>
+    externalEvent$: iObservable<externalData>
     constructor() {
         this.list$ = new Observable<Array<UserInfo>>([]);
-        this.controller = AppController.getInstance();
         this.eventSList = []
-
-        this.init();
+        this.requestData$ = new Observable<requestData>()
+        this.event$ = new Observable<componentsEvent>()
+        this.externalEvent$ = new Observable<externalData>
     }
 
-    private init() {
+
+    createElement() {
         const openButton = createElementFromHTML(buttonOpenListInvitedTemplate);
         const friendsListBlock = createElementFromHTML(friendsListTemplate);
 
@@ -47,16 +57,23 @@ export class ListInvitedFriends {
                 emptyBlock.remove();
             }
         });
+        this.requestData$.next({ command: requestData_COMMANDS.FRIEND_REQUEST })
+        let subc = this.externalEvent$.subscribe((data)=>{
+            if(data.command === requestData_COMMANDS.FRIEND_REQUEST && data.type === externalEventType.DATA){
+                this.setList(data.requests)
+                subc.unsubscribe()
+            }
+        })
 
-        getFriendsInviteList().then((data) => data ? this.setList(data) : null);
-        this.controller.server.event$.subscribe((data) => {
-            if (data.command === "friendRequest") {
+        this.externalEvent$.subscribe((data) => {
+            if (data.command === componentsEvent_COMMANDS.FRIEND_REQUEST && data.type === externalEventType.EVENT) {
                 this.pushList(data.payload.from as UserInfo);
             }
         });
+        return this.openButton;
     }
 
-    createElement() {
+    getElement(){
         return this.openButton;
     }
 
@@ -78,8 +95,8 @@ export class ListInvitedFriends {
         const memberPhoto = friendBlock.querySelector(".chatPhoto") as HTMLImageElement;
         memberPhoto.src = friend.photo;
 
-        const subscribe = this.controller.server.event$.subscribe((data) => {
-            if (data.command === "setUserPhoto" && data.payload?.user?.email === friend.email) {
+        const subscribe = this.externalEvent$.subscribe((data) => {
+            if (data.command === componentsEvent_COMMANDS.SET_USER_PHOTO && data.payload?.user?.email === friend.email) {
                 const timestamp = new Date().getTime();
                 memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
             }
@@ -87,26 +104,26 @@ export class ListInvitedFriends {
         this.eventSList.push(subscribe)
 
         acceptBtn.onclick = () => {
-            this.controller.server.push({
-                command: "friendResponse",
+            this.event$.next({
+                command: componentsEvent_COMMANDS.FRIEND_RESPONSE,
                 payload: {
                     login: friend.email,
                     accept: true
                 }
-            });
+            })
             friendBlock.remove();
             let list = this.list$.getValue();
             list.splice(list.indexOf(friend), 1);
             this.list$.next(list);
         };
         rejectBtn.onclick = () => {
-            this.controller.server.push({
-                command: "friendResponse",
+            this.event$.next({
+                command: componentsEvent_COMMANDS.FRIEND_RESPONSE,
                 payload: {
                     login: friend.email,
                     accept: false
                 }
-            });
+            })
             friendBlock.remove();
             let list = this.list$.getValue();
             list.splice(list.indexOf(friend), 1);

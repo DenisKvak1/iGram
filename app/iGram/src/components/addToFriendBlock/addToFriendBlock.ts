@@ -1,18 +1,24 @@
-import { IAppController, iObservable } from "../../../../../env/types";
+import {
+    componentsEvent,
+    componentsEvent_COMMANDS,
+    iObservable,
+    requestData
+} from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
-import { addFriendBlockTemplate} from "./template";
+import { addFriendBlockTemplate } from "./template";
 import { Observable } from "../../../../../env/helpers/observable";
-import { AppController } from "../../appController";
-import { addToFriendHook } from "../../hook/addToFriendHook";
-import "./style.css"
+import "./style.css";
 
 export class AddToFriendBlock {
-    controller: IAppController
     addFriendBlock: HTMLElement
     addFriend$: iObservable<string>
+    requestData$: iObservable<requestData>
+    event$: iObservable<componentsEvent>
     constructor() {
-        this.controller = AppController.getInstance();
         this.addFriend$ = new Observable<string>()
+
+        this.requestData$ = new Observable<requestData>()
+        this.event$ = new Observable<componentsEvent>()
     }
     createElement(){
         const emailRegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,7 +31,12 @@ export class AddToFriendBlock {
             if(emailRegExp.test(input.value)){
                 this.addFriend$.next(input.value)
                 input.style.boxShadow = ''
-                addToFriendHook(input.value)
+                this.event$.next({
+                    command: componentsEvent_COMMANDS.FRIEND_REQUEST,
+                    payload: {
+                        login: input.value
+                    }
+                })
 
 
                 input.value = ''

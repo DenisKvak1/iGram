@@ -1,27 +1,30 @@
 import {
-    IAppController,
     iObservable,
     iServer,
-    loginValue,
+    credentials,
     serverMessage,
     registerOptions,
     serverResponse
 } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
-
 export class Server implements iServer {
     url: string;
     urlWebSocket: string;
     webSocket: WebSocket;
     event$: iObservable<serverMessage>;
-    private controller: IAppController;
+    ready$: iObservable<boolean>
+    isAuth$: iObservable<boolean>;
 
-    constructor(url: string, urlWebSocket: string, controller: IAppController) {
-        this.controller = controller;
+    constructor(url: string, urlWebSocket: string) {
         this.url = url;
         this.urlWebSocket = urlWebSocket;
+        this.ready$ = new Observable<boolean>()
+        this.isAuth$ = new Observable<boolean>();
+
         this.webSocket = new WebSocket(`${urlWebSocket}?token=${localStorage.getItem("jwt")}`);
+        this.webSocket.onopen = ()=> this.ready$.next(true)
         this.webSocket.onclose = (event) => setTimeout(() => {
+            this.ready$.next(false)
             if (!event.wasClean) {
                 this.wsReconnect();
             }
@@ -79,24 +82,24 @@ export class Server implements iServer {
         }
     }
 
-    async login(loginValue: loginValue): Promise<serverResponse> {
+    async login(loginValue: credentials): Promise<serverResponse> {
         let request = await this.sendRequest("api/login", loginValue, "POST");
         if (request.status === "OK") {
             localStorage.setItem("jwt", request.jwt);
             localStorage.setItem("email", request.email);
-            this.controller.isAuth$.next(true);
+            this.isAuth$.next(true);
         }
 
         this.wsReconnect();
         return request;
     }
 
-    async register(loginValue: loginValue, options: registerOptions): Promise<serverResponse> {
+    async register(loginValue: credentials, options: registerOptions): Promise<serverResponse> {
         let request = await this.sendRequest("api/register", { loginValue, options }, "POST");
         if (request.status === "OK") {
             localStorage.setItem("jwt", request.jwt);
             localStorage.setItem("email", request.email);
-            this.controller.isAuth$.next(true);
+            this.isAuth$.next(true);
         }
 
         this.wsReconnect();
@@ -129,7 +132,9 @@ export class Server implements iServer {
         this.webSocket.close();
         this.webSocket = new WebSocket(`${this.urlWebSocket}?token=${localStorage.getItem("jwt")}`);
         this.receiveMessage();
+        this.webSocket.onopen = ()=> this.ready$.next(true)
         this.webSocket.onclose = (event) => setTimeout(() => {
+            this.webSocket.onopen = ()=> this.ready$.next(false)
             if (!event.wasClean) {
                 this.wsReconnect();
             }

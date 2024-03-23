@@ -1,27 +1,38 @@
-import { IAppController, iModal, iObservable, UserInfo } from "../../../../../env/types";
+import {
+    componentsEvent,
+    componentsEvent_COMMANDS,
+    externalData,
+    externalEventType,
+    iModal,
+    iObservable,
+    requestData,
+    requestData_COMMANDS,
+    UserInfo
+} from "../../../../../env/types";
 import { Observable } from "../../../../../env/helpers/observable";
-import { AppController } from "../../appController";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { Modal } from "../modal/Modal";
-import { getFriendsList, getGroupList } from "../../hook/getList";
 import { addToGroupItemT, addToGroupMenuT, friendsEmptyCGT, openButtonAddToGroup } from "./template";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 
-export class AddUserToGroup {
-    controller: IAppController;
+export class AddUserToChat {
     modal: iModal;
     friendsList: HTMLElement;
     openButton: HTMLElement;
     private list$: iObservable<Array<UserInfo>>;
     private listUserToGroup: Array<string>;
     selectChat$: iObservable<string>;
-
+    requestData$: iObservable<requestData>;
+    event$: iObservable<componentsEvent>;
+    externalEvent$: iObservable<externalData>;
     constructor(selectChat: iObservable<string>) {
         this.selectChat$ = selectChat;
         this.list$ = new Observable<Array<UserInfo>>([]);
-        this.controller = AppController.getInstance();
         this.listUserToGroup = [];
 
+        this.requestData$ = new Observable<requestData>();
+        this.event$ = new Observable<componentsEvent>();
+        this.externalEvent$ = new Observable<externalData>;
         this.init();
     }
 
@@ -35,11 +46,23 @@ export class AddUserToGroup {
 
         this.modal.setOptions({ padding: "0px" });
         openButton.onclick = () => {
-            getFriendsList().then((data) => {
-                getGroupList(this.selectChat$.getValue()).then((chat)=>{
-                    data= data.filter((item)=>!chat[0].members.some((element)=>element.email === item.email))
-                    return data ? this.setList(data) : null
-                })
+            this.requestData$.next({ command: requestData_COMMANDS.FRIENDS });
+            let subsc = this.externalEvent$.subscribe((data) => {
+                if (data.command === requestData_COMMANDS.FRIENDS && data.type === externalEventType.DATA) {
+                    this.requestData$.next({
+                        command: requestData_COMMANDS.CHAT,
+                        payload: { chatID: this.selectChat$.getValue() }
+                    });
+                    this.requestData$.next({ command: requestData_COMMANDS.CHAT, payload: {chatID: this.selectChat$.getValue()} });
+                    let subsc2 = this.externalEvent$.subscribe((chat) => {
+                        if (chat.command === requestData_COMMANDS.CHAT && chat.type === externalEventType.DATA) {
+                            data.requests = data.requests.filter((item) => !chat.payload.chat.members.some((element) => element.email === item.email));
+                            subsc2.unsubscribe();
+                            return data.requests ? this.setList(data.requests) : null;
+                        }
+                    });
+                    subsc.unsubscribe();
+                }
             });
 
             this.modal.open();
@@ -63,13 +86,13 @@ export class AddUserToGroup {
         addToGroup.onclick = () => {
             if (this.listUserToGroup.length > 0) {
                 this.listUserToGroup.forEach((login)=>{
-                    this.controller.server.push({
-                        command: 'friendAddedToGroup',
+                    this.event$.next({
+                        command: componentsEvent_COMMANDS.FRIEND_ADD_TO_CHAT,
                         payload: {
                             login,
                             chatID: this.selectChat$.getValue()
                         }
-                    });
+                    })
                 })
                 this.listUserToGroup = [];
                 this.modal.close();

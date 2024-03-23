@@ -1,4 +1,3 @@
-
 export type iObservable<T> = {
     subscribe: (callback: (eventData: T) => void) => { unsubscribe: () => void };
     next: (eventData?: T) => void
@@ -6,26 +5,124 @@ export type iObservable<T> = {
     getValue: () => T
     setValue: (value: T) => void
     once: (callback: (eventData?: T) => void) => void
+    onceOr: (conditions: boolean, callback: (eventData?: T) => void) => void
 }
 export type iServer = {
     webSocket: WebSocket
     event$: iObservable<serverMessage>
-    push: (message: serverMessage)=>void
-    register: (loginValue: loginValue, options: registerOptions) => Promise<serverResponse>
-    getUserInfo: (login:string)=> Promise<serverResponse>
-    getFriendsInvites: ()=>Promise<serverResponse>
-    getFriendsList: ()=>Promise<serverResponse>
-    login: (loginValue: loginValue) => Promise<serverResponse>
-    checkAuth: ()=> Promise<serverResponse>
-    getChats:(id?:string)=> Promise<serverResponse>
+    push: (message: serverMessage) => void
+    register: (loginValue: credentials, options: registerOptions) => Promise<serverResponse>
+    getUserInfo: (login: string) => Promise<serverResponse>
+    getFriendsInvites: () => Promise<serverResponse>
+    getFriendsList: () => Promise<serverResponse>
+    login: (loginValue: credentials) => Promise<serverResponse>
+    checkAuth: () => Promise<serverResponse>
+    getChats: (id?: string) => Promise<serverResponse>
+    ready$: iObservable<boolean>
+    isAuth$: iObservable<boolean>;
+
+}
+
+export const enum requestData_COMMANDS {
+    CHATS = "CHATS",
+    CHAT = "CHAT",
+    FRIENDS = "FRIENDS",
+    FRIEND_REQUEST = "FRIEND_REQUEST"
+}
+
+export const enum componentsEvent_COMMANDS {
+    LOGIN = "LOGIN",
+    REGISTER = "REGISTER",
+    MESSAGE = "message",
+    FRIEND_REQUEST = "friendRequest",
+    FRIEND_RESPONSE = "friendResponse",
+    REMOVE_FRIEND = "removeFriend",
+    CHAT_CREATED = "chatCreated",
+    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
+    SET_CHAT_PHOTO = "setChatPhoto",
+    SET_USER_PHOTO = "setUserPhoto",
+    LEAVE_CHAT = "leaveChat",
+    LEAVE_ACCOUNT = "LEAVE_ACCOUNT",
+    ACTIVITY = "activity"
+}
+export const enum serverWS_COMMANDS {
+    FRIEND_REQUEST = "friendRequest",
+    FRIEND_RESPONSE = "friendResponse",
+    CHAT_CREATED = "chatCreated",
+    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
+    SET_CHAT_PHOTO = "setChatPhoto",
+    SET_USER_PHOTO = "setUserPhoto",
+    LEAVE_CHAT = "leaveChat",
+    MESSAGE = "message",
+    ACTIVITY = "activity"
+}
+export type componentsEvent = {
+    command: componentsEvent_COMMANDS
+    payload?: Partial<{
+        from: UserInfo | string
+        to: string
+        text: string
+        login: string
+        logins: Array<string>
+        chatName: string
+        chat: iChat
+        accept: boolean
+        chatID: string
+        timestamp: string
+        photo: ArrayBuffer,
+        user: UserInfo
+        credentials: {[key: string]: string}
+        registerOptions: registerOptions
+    }>
+}
+export type requestData = {
+    command: requestData_COMMANDS
+    payload?: Partial<{
+        chatID: string
+    }>
+}
+
+export const enum externalEventType {
+    DATA = "DATA",
+    EVENT = "EVENT"
+}
+
+export type externalData = {
+    type: externalEventType
+    command: requestData_COMMANDS | componentsEvent_COMMANDS
+    payload?: {
+        from?: UserInfo | string
+        to?: string
+        text?: string
+        login?: string
+        logins?: Array<string>
+        chatName?: string
+        chat?: iChat
+        accept?: boolean
+        chatID?: string
+        timestamp?: string
+        photo?: ArrayBuffer,
+        user?: UserInfo
+        error?: string
+    }
+    status?: RESPONSE_STATE
+    Error?: string
+    data?: Array<iChat>
+    requests?: Array<UserInfo>
+    jwt?: string,
+    email?: string
 }
 export type serverResponse = {
     status: RESPONSE_STATE
     Error?: string
+    data?: Array<iChat>
+    requests?: Array<UserInfo>
+    jwt?: string,
+    email?: string
 
-    [key:string]: any
+    [key: string]: any
 }
-export type loginValue = {
+export type credentials = {
     email: string
     password: string
 }
@@ -37,9 +134,10 @@ export const enum RESPONSE_STATE {
     OK = "OK",
     ERROR = "ERROR"
 }
+
 export type addUserT = {
     login: string
-    chatID:string
+    chatID: string
 }
 export type UserInfo = {
     email: string
@@ -50,22 +148,22 @@ export type UserInfo = {
 }
 export type iChat = {
     id: string
-    groupName: string,
+    chatName: string,
     members: Array<UserInfo>
     history: Array<message>
     photo?: string
 }
 
 export type serverMessage = {
-    command: string
+    command: serverWS_COMMANDS
     payload: {
         from?: UserInfo | string
         to?: string
         text?: string
         login?: string
         logins?: Array<string>
-        groupName?: string
-        group?: iChat
+        chatName?: string
+        chat?: iChat
         accept?: boolean
         chatID?: string
         timestamp?: string
@@ -75,34 +173,35 @@ export type serverMessage = {
 }
 export type message = {
     from: UserInfo,
-    fromName:string
+    fromName: string
     to?: string,
     text: string,
     timestamp: string
 }
-export const enum MESSAGE_STATE {
-    PENDING = "PENDING",
-    SENT = "SENT",
-    RECEIVED = "RECEIVED",
-    READ = "READ"
-}
+// export const enum MESSAGE_STATE {
+//     PENDING = "PENDING",
+//     SENT = "SENT",
+//     RECEIVED = "RECEIVED",
+//     READ = "READ"
+// }
 
 export type IAppController = {
     server: iServer
-    isAuth$: iObservable<boolean>
     root: HTMLElement
 }
 export type authBlockOptions = {
     buttonName: string
     inputs: Array<authBlockInput>
-    callback: Function
 }
 export type authBlockInput = {
     placeHolder: string,
     regExp?: string
 }
 export type IAuthForm = {
-    createAuthBlock: ()=> HTMLElement
+    createAuthBlock: () => HTMLElement
+    externalEvent$: iObservable<externalData>;
+    requestData$: iObservable<requestData>;
+    event$: iObservable<componentsEvent>;
 }
 
 export type iModal = {
@@ -132,4 +231,19 @@ export type iModalOptionsFunc = {
     bgColor?: (color: string) => void;
     bgOverlayColor?: (color: number) => void;
     [key: string]: (argument: string | number) => void
+}
+export type iCache<T> ={
+    data: T;
+    time: number;
+    startTime: number;
+    currentTime: number;
+    callback: Function;
+    getData(): Promise<T>;
+    setData(data: T): void;
+    resetCache(): void;
+}
+export type iChatsCache = {
+    cashBD: {[key:string]: iCache<Promise<iChat>>};
+    addChat(chatId:string): void;
+    getChat(id: string): Promise<iChat | undefined>;
 }
