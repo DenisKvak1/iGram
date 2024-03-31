@@ -64,7 +64,9 @@ export class AppController implements IAppController {
                 this.server.getFriendsInvites().then((data) => {
                     mainPage.externalEvent$.next({
                         type: externalEventType.DATA,
-                        command: requestData_COMMANDS.FRIEND_REQUEST, ...data
+                        command: requestData_COMMANDS.FRIEND_REQUEST,
+                        requests: data.requests || [],
+                        ...data
                     });
                 });
             },
@@ -139,8 +141,7 @@ export class AppController implements IAppController {
             },
             [componentsEvent_COMMANDS.ACTIVITY]: () => {
             },
-            [componentsEvent_COMMANDS.SET_CHAT_PHOTO]: () => {
-            }
+            [componentsEvent_COMMANDS.SET_CHAT_PHOTO]: (data: componentsEvent) => this.server.push((data as any))
         };
         const serverEventHandler: Record<serverWS_COMMANDS, (event: serverMessage) => void> = {
             [serverWS_COMMANDS.FRIEND_REQUEST]: (event: serverMessage) => {

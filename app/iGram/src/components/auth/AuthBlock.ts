@@ -45,7 +45,7 @@ export class AuthBlock {
         this.externalEvent$.subscribe((data) => loginBlock.externalEvent$.next(data));
 
         regBlock.event$.subscribe((data: componentsEvent) => this.event$.next({
-            command: componentsEvent_COMMANDS.LOGIN,
+            command: componentsEvent_COMMANDS.REGISTER,
             payload: {
                 credentials: {
                     email: data.payload.credentials.email,

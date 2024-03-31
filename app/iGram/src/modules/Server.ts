@@ -94,8 +94,8 @@ export class Server implements iServer {
         return request;
     }
 
-    async register(loginValue: credentials, options: registerOptions): Promise<serverResponse> {
-        let request = await this.sendRequest("api/register", { loginValue, options }, "POST");
+    async register(credentials: credentials, options: registerOptions): Promise<serverResponse> {
+        let request = await this.sendRequest("api/register", { credentials, options }, "POST");
         if (request.status === "OK") {
             localStorage.setItem("jwt", request.jwt);
             localStorage.setItem("email", request.email);

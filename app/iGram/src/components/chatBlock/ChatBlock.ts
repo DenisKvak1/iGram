@@ -110,7 +110,6 @@ export class ChatBlock {
                         reader.onload = (event) => {
                             const arrayBuffer = event.target?.result as ArrayBuffer;
                             const uint8Array = new Uint8Array(arrayBuffer);
-
                             this.event$.next({
                                 command: componentsEvent_COMMANDS.SET_CHAT_PHOTO,
                                 payload: {

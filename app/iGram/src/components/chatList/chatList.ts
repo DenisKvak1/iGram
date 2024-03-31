@@ -61,10 +61,9 @@ export class ChatList {
                         command: requestData_COMMANDS.CHAT,
                         payload: { chatID: data.payload.chatID }
                     });
-                    this.externalEvent$.subscribe((data) => this.pushList(data.data[0]));
                     let subsc = this.externalEvent$.subscribe((data) => {
                         if (data.command === requestData_COMMANDS.CHAT) {
-                            this.pushList(data.data[0]);
+                            this.pushList(data.payload.chat);
                             subsc.unsubscribe();
                         }
                     });
