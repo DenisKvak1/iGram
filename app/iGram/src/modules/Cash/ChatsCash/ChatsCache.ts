@@ -12,13 +12,9 @@ export class ChatsCache implements iChatsCache {
     addChat(chatId: string) {
         if (this.cashBD[chatId]) return;
         this.cashBD[chatId] = new Cache<Promise<iChat>>(500, async () => {
-            let resp = await server.getChats(chatId);
-            if (resp?.data?.length === 0 || !resp.data) return undefined;
-            if (resp?.data[0]) {
-                return resp?.data[0];
-            } else {
-                return undefined;
-            }
+            let resp = await server.getChat(chatId);
+            if (!resp?.data) return undefined;
+            return resp?.data;
         });
     }
 

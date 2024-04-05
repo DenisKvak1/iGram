@@ -1,74 +1,60 @@
-import {
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    externalData,
-    externalEventType,
-    iChat,
-    iObservable,
-    message,
-    requestData,
-    requestData_COMMANDS
-} from "../../../../../env/types";
+import { chatListCommand, componentsID, iChat, iComponent, iObservable, message } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { Observable } from "../../../../../env/helpers/observable";
 import { chatElementT, chatListT } from "./template";
 import "./style.css";
 import { sortChatsByNewest } from "../../hook/sortChat";
+import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
 
-export class ChatList {
+export class ChatList implements iComponent{
     chatListContainer: HTMLElement;
     selectChat$: iObservable<string>;
     private list$: iObservable<Array<iChat>>;
     eventSList: Array<{ unsubscribe: () => void }>;
-    externalEvent$: iObservable<externalData>;
-    requestData$: iObservable<requestData>;
-    event$: iObservable<componentsEvent>;
 
     constructor() {
         this.list$ = new Observable<Array<iChat>>([]);
         this.selectChat$ = new Observable<string>();
         this.eventSList = [];
-
-        this.externalEvent$ = new Observable<externalData>;
-        this.requestData$ = new Observable<requestData>();
-        this.event$ = new Observable<componentsEvent>();
     }
 
     createElement() {
         this.chatListContainer = createElementFromHTML(chatListT);
-        this.requestData$.next({ command: requestData_COMMANDS.CHATS });
-        let subsc = this.externalEvent$.subscribe((data) => {
-            if (data.command === requestData_COMMANDS.CHATS && data.type === externalEventType.DATA) {
-                this.setList(sortChatsByNewest(data.data));
-                subsc.unsubscribe();
-            }
+        channelInput$.next({ id: componentsID.chatList, command: chatListCommand.GET_CHATS });
+        let subsc = channelOutput$.subscribe((data) => {
+            if (data.command !== chatListCommand.GET_CHATS) return;
+            if(data.id !== componentsID.chatList) return;
+
+            this.setList(sortChatsByNewest(data.payload.data));
+            subsc.unsubscribe();
         });
 
-        this.externalEvent$.subscribe((data) => {
-            if (data.command === componentsEvent_COMMANDS.CHAT_CREATED && data.type === externalEventType.EVENT) {
+        channelOutput$.subscribe((data) => {
+            if (data.command === chatListCommand.CHAT_CREATED) {
                 this.pushList(data.payload.chat);
-            } else if (data.command === componentsEvent_COMMANDS.LEAVE_CHAT && data.type === externalEventType.EVENT) {
+            } else if (data.command === chatListCommand.LEAVE_CHAT) {
                 if (this.selectChat$.getValue() === data.payload.chatID && localStorage.getItem("email") === data.payload.user.email) {
                     let list = this.list$.getValue();
                     list = list.filter((item) => item.id !== data.payload.chatID);
                     this.setList(list);
                     this.selectChat$.next(null);
                 }
-            } else if (data.command === componentsEvent_COMMANDS.FRIEND_ADD_TO_CHAT && data.type === externalEventType.EVENT) {
+            } else if (data.command === chatListCommand.FRIEND_ADD_TO_CHAT) {
                 if (localStorage.getItem("email") === data.payload.user.email) {
-                    this.requestData$.next({
-                        command: requestData_COMMANDS.CHAT,
+                    channelInput$.next({
+                        id: componentsID.chatList,
+                        command: chatListCommand.GET_CHATS,
                         payload: { chatID: data.payload.chatID }
                     });
-                    let subsc = this.externalEvent$.subscribe((data) => {
-                        if (data.command === requestData_COMMANDS.CHAT) {
-                            this.pushList(data.payload.chat);
-                            subsc.unsubscribe();
-                        }
+                    let subsc = channelOutput$.subscribe((data) => {
+                        if (data.command !== chatListCommand.GET_CHAT) return;
+
+                        this.pushList(data.payload.chat);
+                        subsc.unsubscribe();
                     });
                 }
-            } else if (data.command === componentsEvent_COMMANDS.MESSAGE) {
+            } else if (data.command === chatListCommand.MESSAGE) {
                 let list = this.list$.getValue();
                 let chatI = this.list$.getValue().findIndex((item) => item.id === data.payload.to);
 
@@ -111,10 +97,10 @@ export class ChatList {
         chatName.textContent = chat.chatName;
         const latestMessage = chat.history.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
         last_message.textContent = latestMessage ? latestMessage.text : "";
-        const subscribe = this.externalEvent$.subscribe((data) => {
-            if (data.command === componentsEvent_COMMANDS.MESSAGE && data.payload.to === chat.id) {
+        const subscribe = channelOutput$.subscribe((data) => {
+            if (data.command === chatListCommand.MESSAGE && data.payload.to === chat.id) {
                 last_message.textContent = data.payload.text;
-            } else if (data.command === componentsEvent_COMMANDS.SET_CHAT_PHOTO && data.payload.chatID === chat.id) {
+            } else if (data.command === chatListCommand.SET_CHAT_PHOTO &&  data.payload.chatID === chat.id) {
                 const timestamp = new Date().getTime();
                 avatar.src = `${data.payload.photo}?timestamp=${timestamp}`;
             }

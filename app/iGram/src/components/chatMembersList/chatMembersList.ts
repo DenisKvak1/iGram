@@ -1,21 +1,13 @@
-import {
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    externalData,
-    externalEventType,
-    iObservable,
-    requestData,
-    requestData_COMMANDS,
-    UserInfo
-} from "../../../../../env/types";
+import { chatMemberListCommand, componentsID, iComponent, iObservable, UserInfo } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { containerMembersList, memberElement } from "./template";
 import "./style.css";
 import { Observable } from "../../../../../env/helpers/observable";
 import { formatDateString } from "../../../../../env/helpers/formatTime";
+import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
 
-export class ChatMembersList {
+export class ChatMembersList implements iComponent{
     containerMembersList: HTMLElement;
     membersListBlock: HTMLElement;
     selectChat$: iObservable<string>;
@@ -24,20 +16,12 @@ export class ChatMembersList {
     private timeUpdater: Array<NodeJS.Timeout>;
     eventSList: Array<{ unsubscribe: () => void }>;
 
-    externalEvent$: iObservable<externalData>;
-    requestData$: iObservable<requestData>;
-    event$: iObservable<componentsEvent>;
-
     constructor(selectChat: iObservable<string>) {
         this.selectChat$ = selectChat;
         this.list$ = new Observable<Array<UserInfo>>([]);
         this.toChat$ = new Observable();
         this.timeUpdater = [];
         this.eventSList = [];
-
-        this.externalEvent$ = new Observable<externalData>;
-        this.requestData$ = new Observable<requestData>();
-        this.event$ = new Observable<componentsEvent>();
 
         this.init();
     }
@@ -64,21 +48,21 @@ export class ChatMembersList {
             }
         });
         this.selectChat$.subscribe((chatID) => {
-            this.requestData$.next({ command: requestData_COMMANDS.CHAT, payload: { chatID: chatID } });
-            let subsc = this.externalEvent$.subscribe((data) => {
-                if (data.command === requestData_COMMANDS.CHAT && data.type === externalEventType.DATA) {
+            channelInput$.next({id: componentsID.chatMemberList,command: chatMemberListCommand.GET_CHAT, payload: { chatID: chatID } });
+            let subsc = channelOutput$.subscribe((data) => {
+                if (data.command === chatMemberListCommand.GET_CHAT) {
                     if (!data?.payload?.chat) return;
                     this.setList(data.payload.chat.members);
                     subsc.unsubscribe();
                 }
-            });
+            }); 
         });
-        this.externalEvent$.subscribe((data) => {
-            if (data.command === componentsEvent_COMMANDS.LEAVE_CHAT && data.type === externalEventType.EVENT && data.payload.chatID === this.selectChat$.getValue()) {
+        channelOutput$.subscribe((data) => {
+            if (data.command === chatMemberListCommand.LEAVE_CHAT && data.payload.chatID === this.selectChat$.getValue()) {
                 let list = this.list$.getValue();
                 list = list.filter((item) => item.email !== data.payload.user.email);
                 this.setList(list);
-            } else if (data.command === "friendAddedToChat") {
+            } else if (data.command === chatMemberListCommand.FRIEND_ADD_TO_CHAT) {
                 this.pushList(data.payload.user);
             }
         });
@@ -129,11 +113,11 @@ export class ChatMembersList {
             this.timeUpdater.push(intervalId);
         }
 
-        const subscribe = this.externalEvent$.subscribe((data) => {
-            if (data.command === componentsEvent_COMMANDS.SET_USER_PHOTO && data.type === externalEventType.EVENT && data.payload?.user?.email === member.email) {
+        const subscribe = channelOutput$.subscribe((data) => {
+            if (data.command === chatMemberListCommand.SET_USER_PHOTO && data.payload?.user?.email === member.email) {
                 const timestamp = new Date().getTime();
                 memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
-            } else if (data.command === componentsEvent_COMMANDS.ACTIVITY && data.type === externalEventType.EVENT && member.email === data.payload.user.email) {
+            } else if (data.command === chatMemberListCommand.ACTIVITY && member.email === data.payload.user.email) {
                 member.lastActivity = data.payload.user.lastActivity;
 
                 let activityFormatDate = formatDateString(data.payload.user.lastActivity);

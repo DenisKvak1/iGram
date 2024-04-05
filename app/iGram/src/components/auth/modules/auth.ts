@@ -1,33 +1,27 @@
 import "../style.css";
 import { createElementFromHTML } from "../../../../../../env/helpers/createElementFromHTML";
 import {
-    authBlockOptions,
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    externalData,
-    externalEventType,
+    authBlockOptions, componentsEvent,
+    authFormCommand,
+    componentsID,
     IAuthForm,
-    iObservable,
-    requestData
+    iObservable
 } from "../../../../../../env/types";
 import { authForm } from "./template";
 import { createElement } from "../../../../../../env/helpers/createDOMElements";
+import {  channelOutput$ } from "../../../modules/componentDataSharing";
 import { Observable } from "../../../../../../env/helpers/observable";
 
 export class AuthForm implements IAuthForm {
     private options: authBlockOptions;
     private inputs: Array<HTMLInputElement>;
-    externalEvent$: iObservable<externalData>;
-    requestData$: iObservable<requestData>;
     event$: iObservable<componentsEvent>;
 
     constructor(options: authBlockOptions) {
+        this.event$ = new Observable<componentsEvent>()
+
         this.options = options;
         this.inputs = [];
-
-        this.externalEvent$ = new Observable<externalData>;
-        this.requestData$ = new Observable<requestData>();
-        this.event$ = new Observable<componentsEvent>();
     }
 
     createAuthBlock() {
@@ -64,15 +58,17 @@ export class AuthForm implements IAuthForm {
                 objectValues[item.placeHolder] = values[index]
             })
             this.event$.next({
-                command: componentsEvent_COMMANDS.LOGIN,
+                id: componentsID.authForm,
+                command: authFormCommand.LOGIN,
                 payload: {
                     credentials: {...objectValues}
                 }
             })
-            this.externalEvent$.subscribe((data)=>{
-                if((data.command === componentsEvent_COMMANDS.LOGIN || data.command === componentsEvent_COMMANDS.REGISTER) && data.type == externalEventType.DATA){
-                    authError.textContent = data.payload.error
-                }
+            channelOutput$.subscribe((data)=>{
+                if(data.command !== authFormCommand.LOGIN && data.command !== authFormCommand.REGISTER) return
+                if(data.id !== componentsID.authForm) return;
+
+                authError.textContent = data.payload.Error
             })
             this.inputs.map((item) => item.value = "");
         };

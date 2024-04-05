@@ -1,13 +1,10 @@
 import {
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    externalData,
-    externalEventType,
+    createChatBlockCommand,
+    componentsID,
     iModal,
     iObservable,
-    requestData,
-    requestData_COMMANDS,
-    UserInfo
+    UserInfo,
+    iComponent
 } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { buttonCreateGroupMenuTemplate, createGroupItemT, createGroupMenuT, friendsEmptyCGT } from "./template";
@@ -15,23 +12,18 @@ import { Modal } from "../modal/Modal";
 import { Observable } from "../../../../../env/helpers/observable";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import "./style.css";
+import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
 
-export class CreateChatBlock {
+export class CreateChatBlock implements iComponent{
     modal: iModal;
     friendsList: HTMLElement;
     openButton: HTMLElement;
     private list$: iObservable<Array<UserInfo>>;
     private listUserToGroup: Array<string>;
-    requestData$: iObservable<requestData>;
-    event$: iObservable<componentsEvent>;
-    externalEvent$: iObservable<externalData>;
 
     constructor() {
         this.list$ = new Observable<Array<UserInfo>>([]);
         this.listUserToGroup = [];
-        this.requestData$ = new Observable<requestData>();
-        this.event$ = new Observable<componentsEvent>();
-        this.externalEvent$ = new Observable<externalData>;
     }
 
     createElement() {
@@ -44,12 +36,13 @@ export class CreateChatBlock {
 
         this.modal.setOptions({ padding: "0px", maxWidth: "95%"});
         openButton.onclick = () => {
-            this.requestData$.next({ command: requestData_COMMANDS.FRIENDS });
-            let subsc = this.externalEvent$.subscribe((data) => {
-                if (data.command === requestData_COMMANDS.FRIENDS && data.type === externalEventType.DATA) {
-                    this.setList(data.requests);
-                    subsc.unsubscribe();
-                }
+            channelInput$.next({id: componentsID.createChatBlock,command: createChatBlockCommand.GET_FRIENDS   });
+            let subsc = channelOutput$.subscribe((data) => {
+                if(data.id !== componentsID.createChatBlock)
+                if(data.command !== createChatBlockCommand.GET_FRIENDS) return
+
+                this.setList(data.payload.requests);
+                subsc.unsubscribe();
             });
 
             this.modal.open();
@@ -72,8 +65,9 @@ export class CreateChatBlock {
         let createGroupInput = createGroupMenu.querySelector(".nameGropInput input") as HTMLInputElement;
         createGroupBtn.onclick = () => {
             if (createGroupInput.value && this.listUserToGroup.length > 0) {
-                this.event$.next({
-                    command: componentsEvent_COMMANDS.CHAT_CREATED,
+                channelInput$.next({
+                    id: componentsID.createChatBlock ,
+                    command: createChatBlockCommand.CHAT_CREATED,
                     payload: {
                         logins: this.listUserToGroup,
                         chatName: createGroupInput.value

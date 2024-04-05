@@ -1,10 +1,4 @@
-import {
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    externalData,
-    iObservable,
-    requestData
-} from "../../../../../env/types";
+import { chatSideBarCommand, componentsID, iComponent, iObservable } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { leaveBtnT, loadPhotoT, sidePanelTemplate } from "./template";
 import { AddToFriendBlock } from "../addToFriendBlock/addToFriendBlock";
@@ -14,19 +8,13 @@ import "./style.css";
 import { CreateChatBlock } from "../createChatBlock/createChatBlock";
 import { ChatList } from "../chatList/chatList";
 import { Observable } from "../../../../../env/helpers/observable";
+import { channelInput$ } from "../../modules/componentDataSharing";
 
-export class ChatSideBar{
+export class ChatSideBar implements iComponent{
     selectChat$: iObservable<string>
-    externalEvent$: iObservable<externalData>
-    requestData$: iObservable<requestData>
-    event$: iObservable<componentsEvent>
     sideBar: HTMLElement
     constructor() {
         this.selectChat$ = new Observable<string>()
-
-        this.externalEvent$ = new Observable<externalData>
-        this.requestData$ = new Observable<requestData>()
-        this.event$ = new Observable<componentsEvent>()
     }
     createElement(){
         const sideBar = createElementFromHTML(sidePanelTemplate)
@@ -37,21 +25,10 @@ export class ChatSideBar{
         const createGroupBtn = new CreateChatBlock()
         const groupList = new ChatList()
 
-        this.externalEvent$.subscribe((event)=>listInvitedFriends.externalEvent$.next(event))
-        this.externalEvent$.subscribe((event)=>createGroupBtn.externalEvent$.next(event))
-        this.externalEvent$.subscribe((event)=>groupList.externalEvent$.next(event))
-        listInvitedFriends.requestData$.subscribe((data)=> this.requestData$.next(data))
-        createGroupBtn.requestData$.subscribe((data)=> this.requestData$.next(data))
-        groupList.requestData$.subscribe((data)=> this.requestData$.next(data))
-        addToFriendBlock.event$.subscribe((data)=> this.event$.next(data))
-        listInvitedFriends.event$.subscribe((data)=> this.event$.next(data))
-        createGroupBtn.event$.subscribe((data)=> this.event$.next(data))
-        groupList.event$.subscribe((data)=> this.event$.next(data))
-
         const loadPhoto = createElementFromHTML(loadPhotoT)
         groupList.selectChat$.subscribe((data)=>this.selectChat$.next(data))
         leaveButton.onclick = ()=> {
-            this.event$.next({command: componentsEvent_COMMANDS.LEAVE_ACCOUNT})
+            channelInput$.next({id: componentsID.chatSideBar,command: chatSideBarCommand.LEAVE_ACCOUNT})
         }
         const uploadPhoto = loadPhoto.querySelector(".filePhotoLoad2") as HTMLInputElement;
         uploadPhoto.onchange = () => {
@@ -62,8 +39,9 @@ export class ChatSideBar{
                     const arrayBuffer = event.target?.result as ArrayBuffer;
                     const uint8Array = new Uint8Array(arrayBuffer);
 
-                    this.event$.next({
-                        command: componentsEvent_COMMANDS.SET_USER_PHOTO,
+                    channelInput$.next({
+                        id: componentsID.chatSideBar,
+                        command: chatSideBarCommand.SET_USER_PHOTO,
                         payload: {
                             photo: uint8Array
                         }

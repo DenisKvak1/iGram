@@ -1,12 +1,9 @@
 import {
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    externalData,
-    externalEventType,
+    addUserToGroupCommand,
+    componentsID,
+    iComponent,
     iModal,
     iObservable,
-    requestData,
-    requestData_COMMANDS,
     UserInfo
 } from "../../../../../env/types";
 import { Observable } from "../../../../../env/helpers/observable";
@@ -14,25 +11,21 @@ import { createElementFromHTML } from "../../../../../env/helpers/createElementF
 import { Modal } from "../modal/Modal";
 import { addToGroupItemT, addToGroupMenuT, friendsEmptyCGT, openButtonAddToGroup } from "./template";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
+import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
 
-export class AddUserToChat {
+export class AddUserToChat implements iComponent {
     modal: iModal;
     friendsList: HTMLElement;
     openButton: HTMLElement;
     private list$: iObservable<Array<UserInfo>>;
     private listUserToGroup: Array<string>;
     selectChat$: iObservable<string>;
-    requestData$: iObservable<requestData>;
-    event$: iObservable<componentsEvent>;
-    externalEvent$: iObservable<externalData>;
+
     constructor(selectChat: iObservable<string>) {
         this.selectChat$ = selectChat;
         this.list$ = new Observable<Array<UserInfo>>([]);
         this.listUserToGroup = [];
 
-        this.requestData$ = new Observable<requestData>();
-        this.event$ = new Observable<componentsEvent>();
-        this.externalEvent$ = new Observable<externalData>;
         this.init();
     }
 
@@ -46,23 +39,26 @@ export class AddUserToChat {
 
         this.modal.setOptions({ padding: "0px" });
         openButton.onclick = () => {
-            this.requestData$.next({ command: requestData_COMMANDS.FRIENDS });
-            let subsc = this.externalEvent$.subscribe((data) => {
-                if (data.command === requestData_COMMANDS.FRIENDS && data.type === externalEventType.DATA) {
-                    this.requestData$.next({
-                        command: requestData_COMMANDS.CHAT,
-                        payload: { chatID: this.selectChat$.getValue() }
-                    });
-                    this.requestData$.next({ command: requestData_COMMANDS.CHAT, payload: {chatID: this.selectChat$.getValue()} });
-                    let subsc2 = this.externalEvent$.subscribe((chat) => {
-                        if (chat.command === requestData_COMMANDS.CHAT && chat.type === externalEventType.DATA) {
-                            data.requests = data.requests.filter((item) => !chat.payload.chat.members.some((element) => element.email === item.email));
-                            subsc2.unsubscribe();
-                            return data.requests ? this.setList(data.requests) : null;
-                        }
-                    });
-                    subsc.unsubscribe();
-                }
+            channelInput$.next({ id: componentsID.addUserToGroup, command: addUserToGroupCommand.GET_FRIENDS });
+            let subsc = channelOutput$.subscribe((data) => {
+                if (data.id !== componentsID.addUserToGroup) return;
+                if (data.command !== addUserToGroupCommand.GET_FRIENDS) return;
+
+                channelInput$.next({
+                    id: componentsID.addUserToGroup,
+                    command: addUserToGroupCommand.GET_CHAT,
+                    payload: { chatID: this.selectChat$.getValue() }
+                });
+                let subsc2 = channelOutput$.subscribe((chat) => {
+                    if (data.id !== componentsID.addUserToGroup) return;
+                    if (data.command !== addUserToGroupCommand.GET_FRIENDS) return;
+
+                    data.payload.requests = data.payload.requests.filter((item) => !chat.payload.chat.members.some((element) => element.email === item.email));
+                    subsc2.unsubscribe();
+                    return data.payload.requests ? this.setList(data.payload.requests) : null;
+                });
+                subsc.unsubscribe();
+
             });
 
             this.modal.open();
@@ -85,50 +81,56 @@ export class AddUserToChat {
 
         addToGroup.onclick = () => {
             if (this.listUserToGroup.length > 0) {
-                this.listUserToGroup.forEach((login)=>{
-                    this.event$.next({
-                        command: componentsEvent_COMMANDS.FRIEND_ADD_TO_CHAT,
+                this.listUserToGroup.forEach((login) => {
+                    channelInput$.next({
+                        id: componentsID.addUserToGroup,
+                        command: addUserToGroupCommand.FRIEND_ADD_TO_CHAT,
                         payload: {
                             login,
                             chatID: this.selectChat$.getValue()
                         }
-                    })
-                })
+                    });
+                });
                 this.listUserToGroup = [];
                 this.modal.close();
             }
         };
     }
-    createElement(){
+
+    createElement() {
+        return this.openButton;
+    }
+    getElement(){
         return this.openButton
     }
-    setList(friends:Array<UserInfo>){
-        this.friendsList.innerHTML = ''
-        friends.forEach((item)=>{
-            this.pushList(item)
-        })
-        this.list$.next(friends)
+    setList(friends: Array<UserInfo>) {
+        this.friendsList.innerHTML = "";
+        friends.forEach((item) => {
+            this.pushList(item);
+        });
+        this.list$.next(friends);
     }
-    pushList(friend:UserInfo){
-        const friendBlock = createElementFromHTML(addToGroupItemT)
-        let chatName = friendBlock.querySelector('.chat_name') as HTMLElement
-        let checkBox = friendBlock.querySelector('input')
-        const photo = friendBlock.querySelector('.chatPhoto') as HTMLImageElement
-        photo.src = friend.photo
 
-        checkBox.onchange = (event)=>{
-            let element = event.target as HTMLInputElement
-            if(element.checked){
-                this.listUserToGroup.push(friend.email)
+    pushList(friend: UserInfo) {
+        const friendBlock = createElementFromHTML(addToGroupItemT);
+        let chatName = friendBlock.querySelector(".chat_name") as HTMLElement;
+        let checkBox = friendBlock.querySelector("input");
+        const photo = friendBlock.querySelector(".chatPhoto") as HTMLImageElement;
+        photo.src = friend.photo;
+
+        checkBox.onchange = (event) => {
+            let element = event.target as HTMLInputElement;
+            if (element.checked) {
+                this.listUserToGroup.push(friend.email);
             } else {
-                this.listUserToGroup.splice(this.listUserToGroup.indexOf(friend.email), 1)
+                this.listUserToGroup.splice(this.listUserToGroup.indexOf(friend.email), 1);
             }
-        }
-        chatName.textContent = friend.name
+        };
+        chatName.textContent = friend.name;
 
-        let list = this.list$.getValue()
-        list.push(friend)
-        this.list$.next(list)
-        appendChild(this.friendsList, friendBlock)
+        let list = this.list$.getValue();
+        list.push(friend);
+        this.list$.next(list);
+        appendChild(this.friendsList, friendBlock);
     }
 }

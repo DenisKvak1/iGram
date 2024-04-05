@@ -106,16 +106,16 @@ export class Server implements iServer {
         return request;
     }
 
-    async getChats(id?: string): Promise<serverResponse> {
+    async getChats(): Promise<serverResponse> {
         let request: serverResponse;
-        if (!id) {
-            request = await this.sendRequest("api/chats", {}, "GET");
-        } else {
-            request = await this.sendRequest(`api/chats?id=${id}`, {}, "GET");
-        }
+        request = await this.sendRequest("api/chats", {}, "GET");
         return request;
     }
-
+    async getChat(id:string){
+        let request: serverResponse;
+        request = await this.sendRequest(`api/chats/${id}`, {}, "GET");
+        return request;
+    }
     async getFriendsInvites(): Promise<serverResponse> {
         return await this.sendRequest("api/getFriendsInvite", {}, "GET");
     }

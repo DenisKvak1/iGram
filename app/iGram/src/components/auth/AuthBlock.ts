@@ -1,29 +1,13 @@
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { AuthBlockTemplate } from "./template";
-import {
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    externalData,
-    IAppController,
-    iObservable,
-    requestData
-} from "../../../../../env/types";
+import { authFormCommand, componentsEvent, componentsID, IAppController, iComponent } from "../../../../../env/types";
 import { AuthFormFabric } from "./Fabric/fabricBlanks";
-import { Observable } from "../../../../../env/helpers/observable";
+import { channelInput$ } from "../../modules/componentDataSharing";
 
-export class AuthBlock {
+export class AuthBlock implements iComponent{
     controller: IAppController;
     private AuthBlock: HTMLElement;
-
-    externalEvent$: iObservable<externalData>;
-    requestData$: iObservable<requestData>;
-    event$: iObservable<componentsEvent>;
-
     constructor() {
-        this.externalEvent$ = new Observable<externalData>;
-        this.requestData$ = new Observable<requestData>();
-        this.event$ = new Observable<componentsEvent>();
-
         this.init();
     }
 
@@ -32,8 +16,9 @@ export class AuthBlock {
         let loginBlock: any = new AuthFormFabric("login");
         let regBlock: any = new AuthFormFabric("register");
 
-        loginBlock.event$.subscribe((data: componentsEvent) => this.event$.next({
-            command: componentsEvent_COMMANDS.LOGIN,
+        loginBlock.event$.subscribe((data: componentsEvent) => channelInput$.next({
+            id: componentsID.authForm,
+            command: authFormCommand.LOGIN,
             payload: {
                 credentials: {
                     email: data.payload.credentials.email,
@@ -41,11 +26,10 @@ export class AuthBlock {
                 }
             }
         }));
-        loginBlock.requestData$.subscribe((data: requestData) => this.requestData$.next(data));
-        this.externalEvent$.subscribe((data) => loginBlock.externalEvent$.next(data));
 
-        regBlock.event$.subscribe((data: componentsEvent) => this.event$.next({
-            command: componentsEvent_COMMANDS.REGISTER,
+        regBlock.event$.subscribe((data: componentsEvent) => channelInput$.next({
+            id: componentsID.authForm,
+            command: authFormCommand.REGISTER,
             payload: {
                 credentials: {
                     email: data.payload.credentials.email,
@@ -56,15 +40,16 @@ export class AuthBlock {
                 }
             }
         }));
-        regBlock.requestData$.subscribe((data: requestData) => this.requestData$.next(data));
-        this.externalEvent$.subscribe((data) => regBlock.externalEvent$.next(data));
 
         authBlock.appendChild(loginBlock.createAuthBlock());
         authBlock.appendChild(regBlock.createAuthBlock());
         this.AuthBlock = authBlock;
     }
 
-    createAuthBlock() {
+    createElement() {
         return this.AuthBlock;
+    }
+    getElement(){
+        return this.AuthBlock
     }
 }

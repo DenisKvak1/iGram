@@ -1,24 +1,16 @@
-import {
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    iObservable,
-    requestData
-} from "../../../../../env/types";
+import { addToFriendCommand, componentsID, iComponent, iObservable } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { addFriendBlockTemplate } from "./template";
 import { Observable } from "../../../../../env/helpers/observable";
 import "./style.css";
+import { channelInput$ } from "../../modules/componentDataSharing";
 
-export class AddToFriendBlock {
+export class AddToFriendBlock implements iComponent{
     addFriendBlock: HTMLElement
     addFriend$: iObservable<string>
-    requestData$: iObservable<requestData>
-    event$: iObservable<componentsEvent>
     constructor() {
         this.addFriend$ = new Observable<string>()
 
-        this.requestData$ = new Observable<requestData>()
-        this.event$ = new Observable<componentsEvent>()
     }
     createElement(){
         const emailRegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,8 +23,9 @@ export class AddToFriendBlock {
             if(emailRegExp.test(input.value)){
                 this.addFriend$.next(input.value)
                 input.style.boxShadow = ''
-                this.event$.next({
-                    command: componentsEvent_COMMANDS.FRIEND_REQUEST,
+                channelInput$.next({
+                    id: componentsID.addToFriend,
+                    command: addToFriendCommand.FRIEND_REQUEST,
                     payload: {
                         login: input.value
                     }
@@ -44,6 +37,9 @@ export class AddToFriendBlock {
                 input.style.boxShadow = "0 0 3px #ff0000"
             }
         }
+        return this.addFriendBlock
+    }
+    getElement(){
         return this.addFriendBlock
     }
 }

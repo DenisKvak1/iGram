@@ -1,13 +1,10 @@
 import {
-    componentsEvent,
-    componentsEvent_COMMANDS,
-    externalData,
-    externalEventType,
+    listInvitedFriendsCommand,
+    componentsID,
     iModal,
     iObservable,
-    requestData,
-    requestData_COMMANDS,
-    UserInfo
+    UserInfo,
+    iComponent
 } from "../../../../../env/types";
 import "./style.css";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
@@ -15,22 +12,18 @@ import { Modal } from "../modal/Modal";
 import { buttonOpenListInvitedTemplate, friendsEmpty, friendsListTemplate, friendTemplate } from "./template";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { Observable } from "../../../../../env/helpers/observable";
+import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
 
-export class ListInvitedFriends {
+export class ListInvitedFriends implements iComponent{
     modal: iModal;
     friendsList: HTMLElement;
     openButton: HTMLElement;
     private list$: iObservable<Array<UserInfo>>;
-    eventSList: Array<{unsubscribe: ()=>void}>
-    requestData$: iObservable<requestData>
-    event$: iObservable<componentsEvent>
-    externalEvent$: iObservable<externalData>
+    eventSList: Array<{ unsubscribe: () => void }>;
+
     constructor() {
         this.list$ = new Observable<Array<UserInfo>>([]);
-        this.eventSList = []
-        this.requestData$ = new Observable<requestData>()
-        this.event$ = new Observable<componentsEvent>()
-        this.externalEvent$ = new Observable<externalData>
+        this.eventSList = [];
     }
 
 
@@ -40,7 +33,7 @@ export class ListInvitedFriends {
 
         this.friendsList = friendsListBlock.querySelector(".friendsList") as HTMLElement;
         this.modal = new Modal(friendsListBlock);
-        this.modal.setOptions({maxWidth: '95%', padding: "0px"})
+        this.modal.setOptions({ maxWidth: "95%", padding: "0px" });
         openButton.onclick = () => this.modal.open();
         this.openButton = openButton;
 
@@ -57,30 +50,34 @@ export class ListInvitedFriends {
                 emptyBlock.remove();
             }
         });
-        this.requestData$.next({ command: requestData_COMMANDS.FRIEND_REQUEST })
-        let subc = this.externalEvent$.subscribe((data)=>{
-            if(data.command === requestData_COMMANDS.FRIEND_REQUEST && data.type === externalEventType.DATA){
-                this.setList(data.requests)
-                subc.unsubscribe()
-            }
-        })
+        channelInput$.next({
+            id: componentsID.listInvitedFriends,
+            command: listInvitedFriendsCommand.GET_FRIEND_REQUEST
+        });
+        let subc = channelOutput$.subscribe((data) => {
+            if (data.id !== componentsID.listInvitedFriends) return;
+            if (data.command !== listInvitedFriendsCommand.GET_FRIEND_REQUEST) return;
 
-        this.externalEvent$.subscribe((data) => {
-            if (data.command === componentsEvent_COMMANDS.FRIEND_REQUEST && data.type === externalEventType.EVENT) {
-                this.pushList(data.payload.from as UserInfo);
-            }
+            this.setList(data.payload.requests);
+            subc.unsubscribe();
+        });
+
+        channelOutput$.subscribe((data) => {
+            if(data.command !== listInvitedFriendsCommand.FRIEND_REQUEST) return
+
+            this.pushList(data.payload.from as UserInfo);
         });
         return this.openButton;
     }
 
-    getElement(){
+    getElement() {
         return this.openButton;
     }
 
     setList(friends: Array<UserInfo>) {
         this.friendsList.innerHTML = "";
-        this.eventSList.forEach((item)=>item.unsubscribe())
-        this.eventSList = []
+        this.eventSList.forEach((item) => item.unsubscribe());
+        this.eventSList = [];
 
         friends.forEach((item) => {
             this.pushList(item);
@@ -95,35 +92,37 @@ export class ListInvitedFriends {
         const memberPhoto = friendBlock.querySelector(".chatPhoto") as HTMLImageElement;
         memberPhoto.src = friend.photo;
 
-        const subscribe = this.externalEvent$.subscribe((data) => {
-            if (data.command === componentsEvent_COMMANDS.SET_USER_PHOTO && data.payload?.user?.email === friend.email) {
+        const subscribe = channelOutput$.subscribe((data) => {
+            if (data.command === listInvitedFriendsCommand.SET_USER_PHOTO && data.payload?.user?.email === friend.email) {
                 const timestamp = new Date().getTime();
                 memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
             }
         });
-        this.eventSList.push(subscribe)
+        this.eventSList.push(subscribe);
 
         acceptBtn.onclick = () => {
-            this.event$.next({
-                command: componentsEvent_COMMANDS.FRIEND_RESPONSE,
+            channelInput$.next({
+                id: componentsID.listInvitedFriends,
+                command: listInvitedFriendsCommand.FRIEND_RESPONSE,
                 payload: {
                     login: friend.email,
                     accept: true
                 }
-            })
+            });
             friendBlock.remove();
             let list = this.list$.getValue();
             list.splice(list.indexOf(friend), 1);
             this.list$.next(list);
         };
         rejectBtn.onclick = () => {
-            this.event$.next({
-                command: componentsEvent_COMMANDS.FRIEND_RESPONSE,
+            channelInput$.next({
+                id: componentsID.listInvitedFriends,
+                command: listInvitedFriendsCommand.FRIEND_RESPONSE,
                 payload: {
                     login: friend.email,
                     accept: false
                 }
-            })
+            });
             friendBlock.remove();
             let list = this.list$.getValue();
             list.splice(list.indexOf(friend), 1);

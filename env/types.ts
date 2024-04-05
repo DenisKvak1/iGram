@@ -17,34 +17,13 @@ export type iServer = {
     getFriendsList: () => Promise<serverResponse>
     login: (loginValue: credentials) => Promise<serverResponse>
     checkAuth: () => Promise<serverResponse>
-    getChats: (id?: string) => Promise<serverResponse>
+    getChats: () => Promise<serverResponse>
+    getChat:(id:string) => Promise<serverResponse>
     ready$: iObservable<boolean>
     isAuth$: iObservable<boolean>;
 
 }
 
-export const enum requestData_COMMANDS {
-    CHATS = "CHATS",
-    CHAT = "CHAT",
-    FRIENDS = "FRIENDS",
-    FRIEND_REQUEST = "FRIEND_REQUEST"
-}
-
-export const enum componentsEvent_COMMANDS {
-    LOGIN = "LOGIN",
-    REGISTER = "REGISTER",
-    MESSAGE = "message",
-    FRIEND_REQUEST = "friendRequest",
-    FRIEND_RESPONSE = "friendResponse",
-    REMOVE_FRIEND = "removeFriend",
-    CHAT_CREATED = "chatCreated",
-    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
-    SET_CHAT_PHOTO = "setChatPhoto",
-    SET_USER_PHOTO = "setUserPhoto",
-    LEAVE_CHAT = "leaveChat",
-    LEAVE_ACCOUNT = "LEAVE_ACCOUNT",
-    ACTIVITY = "activity"
-}
 export const enum serverWS_COMMANDS {
     FRIEND_REQUEST = "friendRequest",
     FRIEND_RESPONSE = "friendResponse",
@@ -57,7 +36,8 @@ export const enum serverWS_COMMANDS {
     ACTIVITY = "activity"
 }
 export type componentsEvent = {
-    command: componentsEvent_COMMANDS
+    id: componentsID
+    command: string
     payload?: Partial<{
         from: UserInfo | string
         to: string
@@ -73,44 +53,83 @@ export type componentsEvent = {
         user: UserInfo
         credentials: {[key: string]: string}
         registerOptions: registerOptions
+        status: RESPONSE_STATE
+        Error: string
+        data: Array<iChat>
+        requests: Array<UserInfo>
+        jwt: string,
+        email: string
     }>
 }
-export type requestData = {
-    command: requestData_COMMANDS
-    payload?: Partial<{
-        chatID: string
-    }>
+export type iComponent = {
+    createElement: ()=>void
+    getElement: ()=>void
+}
+export const enum componentsID {
+    main = "main",
+    addToFriend = "addToFriend",
+    addUserToGroup = "addUserToGroup",
+    chatBlock = "chatBlock",
+    chatList = "chatList",
+    chatMemberList = "chatMemberList",
+    chatSideBar = "chatSideBar",
+    createChatBlock = "createChatBlock",
+    listInvitedFriends = "listInvitedFriends",
+    authForm = "authForm"
 }
 
-export const enum externalEventType {
-    DATA = "DATA",
-    EVENT = "EVENT"
+export const enum mainCommand{
+    GET_CHATS = "GET_CHATS",
+    GET_CHAT = "GET_CHAT",
 }
-
-export type externalData = {
-    type: externalEventType
-    command: requestData_COMMANDS | componentsEvent_COMMANDS
-    payload?: {
-        from?: UserInfo | string
-        to?: string
-        text?: string
-        login?: string
-        logins?: Array<string>
-        chatName?: string
-        chat?: iChat
-        accept?: boolean
-        chatID?: string
-        timestamp?: string
-        photo?: ArrayBuffer,
-        user?: UserInfo
-        error?: string
-    }
-    status?: RESPONSE_STATE
-    Error?: string
-    data?: Array<iChat>
-    requests?: Array<UserInfo>
-    jwt?: string,
-    email?: string
+export const enum addToFriendCommand{
+    FRIEND_REQUEST = "friendRequest",
+}
+export const enum addUserToGroupCommand{
+    GET_FRIENDS = "GET_FRIENDS",
+    GET_CHATS = "GET_CHATS",
+    GET_CHAT = "GET_CHAT",
+    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
+}
+export const enum chatBlockCommand{
+    GET_CHAT = "GET_CHAT",
+    MESSAGE = "message",
+    SET_CHAT_PHOTO = "setChatPhoto",
+    LEAVE_CHAT = "leaveChat",
+}
+export const enum chatListCommand{
+    SET_CHAT_PHOTO = "setChatPhoto",
+    MESSAGE = "message",
+    GET_CHATS = "GET_CHATS",
+    GET_CHAT = "GET_CHAT",
+    LEAVE_CHAT = "leaveChat",
+    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
+    CHAT_CREATED = "chatCreated",
+}
+export const enum chatMemberListCommand{
+    GET_CHAT = "GET_CHAT",
+    LEAVE_CHAT = "leaveChat",
+    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
+    ACTIVITY = "activity",
+    SET_USER_PHOTO = "setUserPhoto",
+}
+export const enum chatSideBarCommand{
+    SET_USER_PHOTO = "setUserPhoto",
+    LEAVE_ACCOUNT = "LEAVE_ACCOUNT",
+}
+export const enum createChatBlockCommand{
+    GET_FRIENDS = "GET_FRIENDS",
+    CHAT_CREATED = "chatCreated",
+}
+export const enum listInvitedFriendsCommand{
+    FRIEND_REQUEST = "friendRequest",
+    GET_FRIEND_REQUEST = "GET_FRIEND_REQUEST",
+    SET_USER_PHOTO = "setUserPhoto",
+    FRIEND_RESPONSE = "friendResponse",
+}
+export const enum authFormCommand{
+    LOGIN = "LOGIN",
+    REGISTER = "REGISTER",
 }
 export type serverResponse = {
     status: RESPONSE_STATE
@@ -199,8 +218,6 @@ export type authBlockInput = {
 }
 export type IAuthForm = {
     createAuthBlock: () => HTMLElement
-    externalEvent$: iObservable<externalData>;
-    requestData$: iObservable<requestData>;
     event$: iObservable<componentsEvent>;
 }
 
