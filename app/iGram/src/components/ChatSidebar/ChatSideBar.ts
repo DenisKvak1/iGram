@@ -1,4 +1,4 @@
-import { chatSideBarCommand, componentsID, iComponent, iObservable } from "../../../../../env/types";
+import { iComponent, iObservable } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { leaveBtnT, loadPhotoT, sidePanelTemplate } from "./template";
 import { AddToFriendBlock } from "../addToFriendBlock/addToFriendBlock";
@@ -8,7 +8,8 @@ import "./style.css";
 import { CreateChatBlock } from "../createChatBlock/createChatBlock";
 import { ChatList } from "../chatList/chatList";
 import { Observable } from "../../../../../env/helpers/observable";
-import { channelInput$ } from "../../modules/componentDataSharing";
+import { userService } from "../../services/UserService";
+import { authController } from "../../services/AuthController";
 
 export class ChatSideBar implements iComponent{
     selectChat$: iObservable<string>
@@ -28,7 +29,7 @@ export class ChatSideBar implements iComponent{
         const loadPhoto = createElementFromHTML(loadPhotoT)
         groupList.selectChat$.subscribe((data)=>this.selectChat$.next(data))
         leaveButton.onclick = ()=> {
-            channelInput$.next({id: componentsID.chatSideBar,command: chatSideBarCommand.LEAVE_ACCOUNT})
+            authController.logout()
         }
         const uploadPhoto = loadPhoto.querySelector(".filePhotoLoad2") as HTMLInputElement;
         uploadPhoto.onchange = () => {
@@ -39,13 +40,7 @@ export class ChatSideBar implements iComponent{
                     const arrayBuffer = event.target?.result as ArrayBuffer;
                     const uint8Array = new Uint8Array(arrayBuffer);
 
-                    channelInput$.next({
-                        id: componentsID.chatSideBar,
-                        command: chatSideBarCommand.SET_USER_PHOTO,
-                        payload: {
-                            photo: uint8Array
-                        }
-                    });
+                    userService.setPhoto(uint8Array)
                 };
 
                 reader.readAsArrayBuffer(selectedFile);

@@ -1,4 +1,4 @@
-import { chatBlockCommand, componentsID, iComponent, iObservable, message } from "../../../../../env/types";
+import { iComponent, iObservable, message } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { chatInfoBlockT, chatTemplate, messageFromT, messageMeT, sendChatBlockT } from "./template";
 import "./style.css";
@@ -6,9 +6,10 @@ import { Observable } from "../../../../../env/helpers/observable";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { AddUserToChat } from "../addUserToGroup/addUserToChat";
 import { formatDateStringToMessage } from "../../../../../env/helpers/formatTime";
-import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
+import { ChatService, chatManager } from "../../services/ChatService";
+import { userService } from "../../services/UserService";
 
-export class ChatBlock implements iComponent{
+export class ChatBlock implements iComponent {
     chatBlock: HTMLElement;
     messages$: iObservable<Array<message>>;
     messagesBlock: HTMLElement;
@@ -32,36 +33,24 @@ export class ChatBlock implements iComponent{
 
         this.selectChat$.subscribe(async (chatID) => {
             if (!chatID) return;
-            channelInput$.next({
-                id: componentsID.chatBlock,
-                command: chatBlockCommand.GET_CHAT,
-                payload: { chatID: chatID }
-            });
-            let subsc = channelOutput$.subscribe((data) => {
-                if (data.id !== componentsID.chatBlock) return;
-                if (data.command !== chatBlockCommand.GET_CHAT) return;
-
-                if (!data?.payload?.chat) return;
-                let historyMessages = data.payload.chat.history;
-                let groupName = data.payload.chat.chatName;
+            const chat = new ChatService(chatID)
+            chat.getChat((chat) => {
+                if (!chat) return;
+                let historyMessages = chat.history;
+                let groupName = chat.chatName;
                 let chatNameElement = this.chatBlock.querySelector(".chat_name") as HTMLElement;
                 chatNameElement.textContent = groupName;
                 chatNameElement.onclick = () => {
                     this.toMemberList$.next();
                 };
                 this.setMessages(historyMessages);
-                subsc.unsubscribe();
-
-            });
+            })
         });
+        chatManager.message$.subscribe((msg)=>{
+            if(msg.to !== this.selectChat$.getValue()) return
+            this.pushMessage(msg);
+        })
 
-        channelOutput$.subscribe((event) => {
-            if (event.id !== componentsID.chatBlock) return;
-            if (event.command !== chatBlockCommand.MESSAGE) return;
-
-            if (event.payload.to !== this.selectChat$.getValue()) return;
-            this.pushMessage(event.payload as message);
-        });
         let checkEmpty = (data: string) => {
             let sendBlock = this.chatBlock.querySelector(".sendBlock");
             let chatInfoBlock = this.chatBlock.querySelector(".chatInfoBlock");
@@ -99,14 +88,8 @@ export class ChatBlock implements iComponent{
                         reader.onload = (event) => {
                             const arrayBuffer = event.target?.result as ArrayBuffer;
                             const uint8Array = new Uint8Array(arrayBuffer);
-                            channelInput$.next({
-                                id: componentsID.chatBlock,
-                                command: chatBlockCommand.SET_CHAT_PHOTO,
-                                payload: {
-                                    chatID: this.selectChat$.getValue(),
-                                    photo: uint8Array
-                                }
-                            });
+                            const chat = new ChatService(this.selectChat$.getValue());
+                            chat.setPhoto(uint8Array);
                         };
 
                         reader.readAsArrayBuffer(selectedFile);
@@ -118,14 +101,11 @@ export class ChatBlock implements iComponent{
                 };
                 let sendMessage = () => {
                     if (!inputMessage.value) return;
-                    channelInput$.next({
-                        id: componentsID.chatBlock,
-                        command: chatBlockCommand.MESSAGE,
-                        payload: {
-                            from: localStorage.getItem("email"),
-                            to: this.selectChat$.getValue(),
-                            text: inputMessage.value
-                        }
+                    const chat = new ChatService(this.selectChat$.getValue());
+                    chat.pushMessage({
+                        from: localStorage.getItem("email"),
+                        to: this.selectChat$.getValue(),
+                        text: inputMessage.value
                     });
                     inputMessage.value = "";
                 };
@@ -138,13 +118,8 @@ export class ChatBlock implements iComponent{
                     sendMessage();
                 };
                 leaveGroup.onclick = () => {
-                    channelInput$.next({
-                        id: componentsID.chatBlock,
-                        command: chatBlockCommand.LEAVE_CHAT,
-                        payload: {
-                            chatID: this.selectChat$.getValue()
-                        }
-                    });
+                    const chat = new ChatService(this.selectChat$.getValue())
+                    chat.leaveChat()
                     if (window.innerWidth < 1200) {
                         this.toChatList$.next();
                     }
@@ -196,18 +171,16 @@ export class ChatBlock implements iComponent{
         const userName = messageElement.querySelector(".message_name");
         userName.textContent = messageP.from.name;
 
-        const subscribe = channelOutput$.subscribe((data) => {
-            if (data.id !== componentsID.chatBlock) return;
-            if (data.command !== chatBlockCommand.SET_CHAT_PHOTO) return;
-            if (data.payload?.user?.email !== messageP.from.email) return;
+        const subscribe = userService.setPhoto$.subscribe((user) => {
+            if (user?.email !== messageP.from.email) return;
 
             if (messageP.from.email.toUpperCase() !== localStorage.getItem("email").toUpperCase()) {
                 const timestamp = new Date().getTime();
                 let userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;
-                userPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
+                userPhoto.src = `${user.photo}?timestamp=${timestamp}`;
             }
 
-        });
+        })
         this.eventSList.push(subscribe);
         messageElement.querySelector(".message_date").textContent = formatDateStringToMessage(messageP.timestamp);
 

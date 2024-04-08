@@ -1,4 +1,4 @@
-import { iChat } from "../../../../env/types";
+import { iChat } from "../types";
 
 export function sortChatsByNewest(chats: Array<iChat>) {
     return chats.sort((chatA, chatB) => {

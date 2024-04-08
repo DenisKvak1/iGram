@@ -18,10 +18,8 @@ export type iServer = {
     login: (loginValue: credentials) => Promise<serverResponse>
     checkAuth: () => Promise<serverResponse>
     getChats: () => Promise<serverResponse>
-    getChat:(id:string) => Promise<serverResponse>
+    getChat: (id: string) => Promise<serverResponse>
     ready$: iObservable<boolean>
-    isAuth$: iObservable<boolean>;
-
 }
 
 export const enum serverWS_COMMANDS {
@@ -35,6 +33,7 @@ export const enum serverWS_COMMANDS {
     MESSAGE = "message",
     ACTIVITY = "activity"
 }
+
 export type componentsEvent = {
     id: componentsID
     command: string
@@ -51,7 +50,7 @@ export type componentsEvent = {
         timestamp: string
         photo: ArrayBuffer,
         user: UserInfo
-        credentials: {[key: string]: string}
+        credentials: { [key: string]: string }
         registerOptions: registerOptions
         status: RESPONSE_STATE
         Error: string
@@ -62,9 +61,10 @@ export type componentsEvent = {
     }>
 }
 export type iComponent = {
-    createElement: ()=>void
-    getElement: ()=>void
+    createElement: () => void
+    getElement: () => void
 }
+
 export const enum componentsID {
     main = "main",
     addToFriend = "addToFriend",
@@ -78,59 +78,17 @@ export const enum componentsID {
     authForm = "authForm"
 }
 
-export const enum mainCommand{
-    GET_CHATS = "GET_CHATS",
-    GET_CHAT = "GET_CHAT",
-}
-export const enum addToFriendCommand{
-    FRIEND_REQUEST = "friendRequest",
-}
-export const enum addUserToGroupCommand{
-    GET_FRIENDS = "GET_FRIENDS",
-    GET_CHATS = "GET_CHATS",
-    GET_CHAT = "GET_CHAT",
-    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
-}
-export const enum chatBlockCommand{
-    GET_CHAT = "GET_CHAT",
-    MESSAGE = "message",
-    SET_CHAT_PHOTO = "setChatPhoto",
-    LEAVE_CHAT = "leaveChat",
-}
-export const enum chatListCommand{
-    SET_CHAT_PHOTO = "setChatPhoto",
-    MESSAGE = "message",
-    GET_CHATS = "GET_CHATS",
-    GET_CHAT = "GET_CHAT",
-    LEAVE_CHAT = "leaveChat",
-    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
-    CHAT_CREATED = "chatCreated",
-}
-export const enum chatMemberListCommand{
-    GET_CHAT = "GET_CHAT",
-    LEAVE_CHAT = "leaveChat",
-    FRIEND_ADD_TO_CHAT = "friendAddedToChat",
-    ACTIVITY = "activity",
-    SET_USER_PHOTO = "setUserPhoto",
-}
-export const enum chatSideBarCommand{
-    SET_USER_PHOTO = "setUserPhoto",
+
+export const enum chatSideBarCommand {
     LEAVE_ACCOUNT = "LEAVE_ACCOUNT",
 }
-export const enum createChatBlockCommand{
-    GET_FRIENDS = "GET_FRIENDS",
-    CHAT_CREATED = "chatCreated",
-}
-export const enum listInvitedFriendsCommand{
-    FRIEND_REQUEST = "friendRequest",
-    GET_FRIEND_REQUEST = "GET_FRIEND_REQUEST",
-    SET_USER_PHOTO = "setUserPhoto",
-    FRIEND_RESPONSE = "friendResponse",
-}
-export const enum authFormCommand{
+
+
+export const enum authFormCommand {
     LOGIN = "LOGIN",
     REGISTER = "REGISTER",
 }
+
 export type serverResponse = {
     status: RESPONSE_STATE
     Error?: string
@@ -154,10 +112,14 @@ export const enum RESPONSE_STATE {
     ERROR = "ERROR"
 }
 
-export type addUserT = {
-    login: string
-    chatID: string
-}
+export type fromChat = {
+    from: string,
+    chat: iChat
+};
+export type ChatUserInfo = {
+    chatID: string;
+    user: UserInfo;
+};
 export type UserInfo = {
     email: string
     name: string
@@ -197,15 +159,54 @@ export type message = {
     text: string,
     timestamp: string
 }
+export type messageClient = {
+    from: string,
+    fromName?: string
+    to?: string,
+    text: string,
+    timestamp?: string
+}
 // export const enum MESSAGE_STATE {
 //     PENDING = "PENDING",
 //     SENT = "SENT",
 //     RECEIVED = "RECEIVED",
 //     READ = "READ"
 // }
-
+export type IAuthController = {
+    isAuth$: iObservable<boolean>;
+    login: (credentials: credentials, errorCallback:Function) => void
+    register: (credentials: credentials, registerOptions: registerOptions, errorCallback:Function) => void
+    logout: () => void
+}
+export type IUserService = {
+    setPhoto$: iObservable<UserInfo>;
+    activity$: iObservable<UserInfo>;
+    friendRequest$: iObservable<UserInfo>
+    setPhoto: (photo: ArrayBuffer) => void;
+    friendRequest: (login: string) => void;
+    friendResponse: (login: string, accept: boolean) => void;
+    getFriendsList: (callback: (FriendList: Array<UserInfo>) => void) => void;
+    getFriendsInviteList: (callback: (FriendInviteList: Array<UserInfo>) => void) => void;
+    getUserInfo: (login: string, callback: (UserInfo: UserInfo) => void) => void;
+};
+export type IChatService = {
+    message$: iObservable<message>;
+    setPhoto$: iObservable<{ chatID: string, photo: string }>;
+    setPhoto: (photo: ArrayBuffer) => void
+    pushMessage: (message: messageClient) => void
+    addUser: (login: string) => void
+    getChat: (callback: (chat: iChat) => void) => void
+    leaveChat: () => void
+}
+export type IChatManager = {
+    leaveChat$: iObservable<{ chatID: string, user: UserInfo }>;
+    message$: iObservable<message>;
+    chatCreated$: iObservable<{ from: string, chat: iChat }>;
+    addMember$: iObservable<{ chatID: string, user: UserInfo }>
+    createChat: (login: Array<string>, chatName: string) => void
+    getChats: (callback: (chats: Array<iChat>) => void) => void
+}
 export type IAppController = {
-    server: iServer
     root: HTMLElement
 }
 export type authBlockOptions = {
@@ -218,8 +219,9 @@ export type authBlockInput = {
 }
 export type IAuthForm = {
     createAuthBlock: () => HTMLElement
-    event$: iObservable<componentsEvent>;
+    event$: iObservable<any>;
 }
+export type IInputCommandHandler = Record<componentsID, (data: componentsEvent) => void>
 
 export type iModal = {
     close$: iObservable<null>
@@ -249,7 +251,7 @@ export type iModalOptionsFunc = {
     bgOverlayColor?: (color: number) => void;
     [key: string]: (argument: string | number) => void
 }
-export type iCache<T> ={
+export type iCache<T> = {
     data: T;
     time: number;
     startTime: number;
@@ -260,7 +262,7 @@ export type iCache<T> ={
     resetCache(): void;
 }
 export type iChatsCache = {
-    cashBD: {[key:string]: iCache<Promise<iChat>>};
-    addChat(chatId:string): void;
+    cashBD: { [key: string]: iCache<Promise<iChat>> };
+    addChat(chatId: string): void;
     getChat(id: string): Promise<iChat | undefined>;
 }

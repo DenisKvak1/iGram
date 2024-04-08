@@ -1,24 +1,17 @@
 import "../style.css";
 import { createElementFromHTML } from "../../../../../../env/helpers/createElementFromHTML";
-import {
-    authBlockOptions, componentsEvent,
-    authFormCommand,
-    componentsID,
-    IAuthForm,
-    iObservable
-} from "../../../../../../env/types";
+import { authBlockOptions, IAuthForm, iObservable } from "../../../../../../env/types";
 import { authForm } from "./template";
 import { createElement } from "../../../../../../env/helpers/createDOMElements";
-import {  channelOutput$ } from "../../../modules/componentDataSharing";
 import { Observable } from "../../../../../../env/helpers/observable";
 
 export class AuthForm implements IAuthForm {
     private options: authBlockOptions;
     private inputs: Array<HTMLInputElement>;
-    event$: iObservable<componentsEvent>;
+    event$: iObservable<any>;
 
     constructor(options: authBlockOptions) {
-        this.event$ = new Observable<componentsEvent>()
+        this.event$ = new Observable<any>();
 
         this.options = options;
         this.inputs = [];
@@ -27,7 +20,7 @@ export class AuthForm implements IAuthForm {
     createAuthBlock() {
         let form = createElementFromHTML(authForm);
         let btn = form.querySelector(".submitAuth") as HTMLButtonElement;
-        let authError = form.querySelector('.authError')
+        let authError = form.querySelector(".authError");
         btn.textContent = this.options.buttonName;
         this.options.inputs.forEach((item) => {
             let input = createElement("input") as HTMLInputElement;
@@ -53,23 +46,16 @@ export class AuthForm implements IAuthForm {
 
             let values = this.inputs.map((item) => item.value);
 
-            let objectValues:any = {}
-            this.options.inputs.forEach((item, index)=>{
-                objectValues[item.placeHolder] = values[index]
-            })
+            let objectValues: any = {};
+            this.options.inputs.forEach((item, index) => {
+                objectValues[item.placeHolder] = values[index];
+            });
             this.event$.next({
-                id: componentsID.authForm,
-                command: authFormCommand.LOGIN,
-                payload: {
-                    credentials: {...objectValues}
+                credentials: { ...objectValues },
+                errorCallback: (error: string) => {
+                    authError.textContent = error
                 }
-            })
-            channelOutput$.subscribe((data)=>{
-                if(data.command !== authFormCommand.LOGIN && data.command !== authFormCommand.REGISTER) return
-                if(data.id !== componentsID.authForm) return;
-
-                authError.textContent = data.payload.Error
-            })
+            });
             this.inputs.map((item) => item.value = "");
         };
         return form;

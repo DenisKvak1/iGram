@@ -1,20 +1,13 @@
-import {
-    listInvitedFriendsCommand,
-    componentsID,
-    iModal,
-    iObservable,
-    UserInfo,
-    iComponent
-} from "../../../../../env/types";
+import { iComponent, iModal, iObservable, UserInfo } from "../../../../../env/types";
 import "./style.css";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { Modal } from "../modal/Modal";
 import { buttonOpenListInvitedTemplate, friendsEmpty, friendsListTemplate, friendTemplate } from "./template";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { Observable } from "../../../../../env/helpers/observable";
-import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
+import { userService } from "../../services/UserService";
 
-export class ListInvitedFriends implements iComponent{
+export class ListInvitedFriends implements iComponent {
     modal: iModal;
     friendsList: HTMLElement;
     openButton: HTMLElement;
@@ -50,22 +43,12 @@ export class ListInvitedFriends implements iComponent{
                 emptyBlock.remove();
             }
         });
-        channelInput$.next({
-            id: componentsID.listInvitedFriends,
-            command: listInvitedFriendsCommand.GET_FRIEND_REQUEST
-        });
-        let subc = channelOutput$.subscribe((data) => {
-            if (data.id !== componentsID.listInvitedFriends) return;
-            if (data.command !== listInvitedFriendsCommand.GET_FRIEND_REQUEST) return;
-
-            this.setList(data.payload.requests);
-            subc.unsubscribe();
+        userService.getFriendsInviteList((friends) => {
+            this.setList(friends);
         });
 
-        channelOutput$.subscribe((data) => {
-            if(data.command !== listInvitedFriendsCommand.FRIEND_REQUEST) return
-
-            this.pushList(data.payload.from as UserInfo);
+        userService.friendRequest$.subscribe((user) => {
+            this.pushList(user);
         });
         return this.openButton;
     }
@@ -92,37 +75,23 @@ export class ListInvitedFriends implements iComponent{
         const memberPhoto = friendBlock.querySelector(".chatPhoto") as HTMLImageElement;
         memberPhoto.src = friend.photo;
 
-        const subscribe = channelOutput$.subscribe((data) => {
-            if (data.command === listInvitedFriendsCommand.SET_USER_PHOTO && data.payload?.user?.email === friend.email) {
-                const timestamp = new Date().getTime();
-                memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
-            }
+        const subscribe = userService.setPhoto$.subscribe((user) => {
+            if (user?.email !== friend.email) return;
+
+            const timestamp = new Date().getTime();
+            memberPhoto.src = `${user.photo}?timestamp=${timestamp}`;
         });
         this.eventSList.push(subscribe);
 
         acceptBtn.onclick = () => {
-            channelInput$.next({
-                id: componentsID.listInvitedFriends,
-                command: listInvitedFriendsCommand.FRIEND_RESPONSE,
-                payload: {
-                    login: friend.email,
-                    accept: true
-                }
-            });
+            userService.friendResponse(friend.email, true);
             friendBlock.remove();
             let list = this.list$.getValue();
             list.splice(list.indexOf(friend), 1);
             this.list$.next(list);
         };
         rejectBtn.onclick = () => {
-            channelInput$.next({
-                id: componentsID.listInvitedFriends,
-                command: listInvitedFriendsCommand.FRIEND_RESPONSE,
-                payload: {
-                    login: friend.email,
-                    accept: false
-                }
-            });
+            userService.friendResponse(friend.email, false);
             friendBlock.remove();
             let list = this.list$.getValue();
             list.splice(list.indexOf(friend), 1);

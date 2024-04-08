@@ -7,19 +7,18 @@ import {
     serverResponse
 } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
+import { authController } from "../services/AuthController";
 export class Server implements iServer {
     url: string;
     urlWebSocket: string;
     webSocket: WebSocket;
     event$: iObservable<serverMessage>;
     ready$: iObservable<boolean>
-    isAuth$: iObservable<boolean>;
 
     constructor(url: string, urlWebSocket: string) {
         this.url = url;
         this.urlWebSocket = urlWebSocket;
         this.ready$ = new Observable<boolean>()
-        this.isAuth$ = new Observable<boolean>();
 
         this.webSocket = new WebSocket(`${urlWebSocket}?token=${localStorage.getItem("jwt")}`);
         this.webSocket.onopen = ()=> this.ready$.next(true)
@@ -87,7 +86,7 @@ export class Server implements iServer {
         if (request.status === "OK") {
             localStorage.setItem("jwt", request.jwt);
             localStorage.setItem("email", request.email);
-            this.isAuth$.next(true);
+            authController.isAuth$.next(true)
         }
 
         this.wsReconnect();
@@ -99,7 +98,7 @@ export class Server implements iServer {
         if (request.status === "OK") {
             localStorage.setItem("jwt", request.jwt);
             localStorage.setItem("email", request.email);
-            this.isAuth$.next(true);
+            authController.isAuth$.next(true)
         }
 
         this.wsReconnect();
@@ -141,3 +140,4 @@ export class Server implements iServer {
         }, 3000);
     }
 }
+export const server = new Server("http://127.0.0.1:3000", "ws:///127.0.0.1:3000");

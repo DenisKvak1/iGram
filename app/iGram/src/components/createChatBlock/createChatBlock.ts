@@ -1,6 +1,4 @@
 import {
-    createChatBlockCommand,
-    componentsID,
     iModal,
     iObservable,
     UserInfo,
@@ -12,7 +10,8 @@ import { Modal } from "../modal/Modal";
 import { Observable } from "../../../../../env/helpers/observable";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import "./style.css";
-import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
+import { chatManager } from "../../services/ChatService";
+import { userService } from "../../services/UserService";
 
 export class CreateChatBlock implements iComponent{
     modal: iModal;
@@ -36,15 +35,9 @@ export class CreateChatBlock implements iComponent{
 
         this.modal.setOptions({ padding: "0px", maxWidth: "95%"});
         openButton.onclick = () => {
-            channelInput$.next({id: componentsID.createChatBlock,command: createChatBlockCommand.GET_FRIENDS   });
-            let subsc = channelOutput$.subscribe((data) => {
-                if(data.id !== componentsID.createChatBlock)
-                if(data.command !== createChatBlockCommand.GET_FRIENDS) return
-
-                this.setList(data.payload.requests);
-                subsc.unsubscribe();
-            });
-
+            userService.getFriendsList((friends) => {
+                this.setList(friends);
+            })
             this.modal.open();
         };
         let emptyBlock = createElementFromHTML(friendsEmptyCGT);
@@ -65,14 +58,7 @@ export class CreateChatBlock implements iComponent{
         let createGroupInput = createGroupMenu.querySelector(".nameGropInput input") as HTMLInputElement;
         createGroupBtn.onclick = () => {
             if (createGroupInput.value && this.listUserToGroup.length > 0) {
-                channelInput$.next({
-                    id: componentsID.createChatBlock ,
-                    command: createChatBlockCommand.CHAT_CREATED,
-                    payload: {
-                        logins: this.listUserToGroup,
-                        chatName: createGroupInput.value
-                    }
-                });
+                chatManager.createChat(this.listUserToGroup, createGroupInput.value)
                 createGroupInput.value = "";
                 this.listUserToGroup = [];
                 this.modal.close();

@@ -1,6 +1,6 @@
 import { iCache, iChat, iChatsCache } from "../../../../../../env/types";
 import { Cache } from "../Cache";
-import { server } from "../../../appController";
+import { server } from "../../Server";
 
 export class ChatsCache implements iChatsCache {
     cashBD: { [key: string]: iCache<Promise<iChat>> };
@@ -22,3 +22,4 @@ export class ChatsCache implements iChatsCache {
         return this.cashBD[id]?.getData();
     }
 }
+export const chatsCache = new ChatsCache()

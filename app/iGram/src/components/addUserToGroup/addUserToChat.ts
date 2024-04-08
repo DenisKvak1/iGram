@@ -1,6 +1,4 @@
 import {
-    addUserToGroupCommand,
-    componentsID,
     iComponent,
     iModal,
     iObservable,
@@ -11,7 +9,8 @@ import { createElementFromHTML } from "../../../../../env/helpers/createElementF
 import { Modal } from "../modal/Modal";
 import { addToGroupItemT, addToGroupMenuT, friendsEmptyCGT, openButtonAddToGroup } from "./template";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
-import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
+import { ChatService } from "../../services/ChatService";
+import { userService } from "../../services/UserService";
 
 export class AddUserToChat implements iComponent {
     modal: iModal;
@@ -39,26 +38,12 @@ export class AddUserToChat implements iComponent {
 
         this.modal.setOptions({ padding: "0px" });
         openButton.onclick = () => {
-            channelInput$.next({ id: componentsID.addUserToGroup, command: addUserToGroupCommand.GET_FRIENDS });
-            let subsc = channelOutput$.subscribe((data) => {
-                if (data.id !== componentsID.addUserToGroup) return;
-                if (data.command !== addUserToGroupCommand.GET_FRIENDS) return;
-
-                channelInput$.next({
-                    id: componentsID.addUserToGroup,
-                    command: addUserToGroupCommand.GET_CHAT,
-                    payload: { chatID: this.selectChat$.getValue() }
+            userService.getFriendsList((users) => {
+                const chat = new ChatService(this.selectChat$.getValue());
+                chat.getChat((chat) => {
+                    users = users.filter((item) => !chat.members.some((element) => element.email === item.email));
+                    return users ? this.setList(users) : null;
                 });
-                let subsc2 = channelOutput$.subscribe((chat) => {
-                    if (data.id !== componentsID.addUserToGroup) return;
-                    if (data.command !== addUserToGroupCommand.GET_FRIENDS) return;
-
-                    data.payload.requests = data.payload.requests.filter((item) => !chat.payload.chat.members.some((element) => element.email === item.email));
-                    subsc2.unsubscribe();
-                    return data.payload.requests ? this.setList(data.payload.requests) : null;
-                });
-                subsc.unsubscribe();
-
             });
 
             this.modal.open();
@@ -82,14 +67,8 @@ export class AddUserToChat implements iComponent {
         addToGroup.onclick = () => {
             if (this.listUserToGroup.length > 0) {
                 this.listUserToGroup.forEach((login) => {
-                    channelInput$.next({
-                        id: componentsID.addUserToGroup,
-                        command: addUserToGroupCommand.FRIEND_ADD_TO_CHAT,
-                        payload: {
-                            login,
-                            chatID: this.selectChat$.getValue()
-                        }
-                    });
+                    const chat = new ChatService(this.selectChat$.getValue());
+                    chat.addUser(login);
                 });
                 this.listUserToGroup = [];
                 this.modal.close();
@@ -100,9 +79,11 @@ export class AddUserToChat implements iComponent {
     createElement() {
         return this.openButton;
     }
-    getElement(){
-        return this.openButton
+
+    getElement() {
+        return this.openButton;
     }
+
     setList(friends: Array<UserInfo>) {
         this.friendsList.innerHTML = "";
         friends.forEach((item) => {

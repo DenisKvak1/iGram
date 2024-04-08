@@ -1,12 +1,12 @@
 import { AuthBlock } from "../../components/auth/AuthBlock";
-import { componentsID, iObservable, mainCommand } from "../../../../../env/types";
+import { iObservable } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { mainPageTemplate } from "./template";
 import "./style.css";
 import { ChatSideBar } from "../../components/ChatSidebar/ChatSideBar";
 import { ChatBlock } from "../../components/chatBlock/ChatBlock";
 import { ChatMembersList } from "../../components/chatMembersList/chatMembersList";
-import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
+import { ChatService, chatManager } from "../../services/ChatService";
 
 export class MainPage {
     isAuth$: iObservable<boolean>;
@@ -63,16 +63,9 @@ export class MainPage {
                     }
                 });
                 if (chatID) {
-                    channelInput$.next({
-                        id: componentsID.main,
-                        command: mainCommand.GET_CHAT,
-                        payload: { chatID: chatID }
-                    });
-                    let subc = channelOutput$.subscribe((event) => {
-                        if (event.id !== componentsID.main) return;
-                        if (event.command !== mainCommand.GET_CHAT) return;
-
-                        if (!event?.payload?.chat) {
+                    const chat = new ChatService(chatID)
+                    chat.getChat((chat)=>{
+                        if (!chat) {
                             let url = new URL(window.location.href);
                             url.searchParams.delete("chatID");
                             window.history.replaceState(null, null, url.toString());
@@ -80,8 +73,7 @@ export class MainPage {
                             return;
                         }
                         chatSidePanel.selectChat$.next(chatID);
-                        subc.unsubscribe();
-                    });
+                    })
                 }
                 chatBlock.getElement().insertAdjacentElement("afterend", membersList.createElement());
                 let checkResize = () => {
@@ -91,20 +83,14 @@ export class MainPage {
                         }
 
                         selectChatSubscription = chatSidePanel.selectChat$.subscribe(() => {
-                            channelInput$.next({ id: componentsID.main, command: mainCommand.GET_CHATS });
-                            let subc = channelOutput$.subscribe((event) => {
-                                if (event.id !== componentsID.main) return;
-                                if (event.command !== mainCommand.GET_CHATS) return;
-
+                            chatManager.getChats(() => {
                                 if (!(window.innerWidth >= 1200)) {
-                                    if(!chatSidePanel.selectChat$.getValue()) return;
+                                    if (!chatSidePanel.selectChat$.getValue()) return;
                                     chatSidePanel.getElement().classList.add("noneVisible");
                                     chatBlock.getElement().classList.remove("noneVisible");
                                 }
                                 chatBlock.getElement().insertAdjacentElement("afterend", membersList.getElement());
-                                subc.unsubscribe();
-
-                            });
+                            })
                         });
                         membersList.getElement().classList.add("noneVisible");
                         if (chatSidePanel.selectChat$.getValue()) {

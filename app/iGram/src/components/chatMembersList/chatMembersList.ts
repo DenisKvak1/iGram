@@ -1,13 +1,14 @@
-import { chatMemberListCommand, componentsID, iComponent, iObservable, UserInfo } from "../../../../../env/types";
+import { iComponent, iObservable, UserInfo } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { containerMembersList, memberElement } from "./template";
 import "./style.css";
 import { Observable } from "../../../../../env/helpers/observable";
 import { formatDateString } from "../../../../../env/helpers/formatTime";
-import { channelInput$, channelOutput$ } from "../../modules/componentDataSharing";
+import { userService } from "../../services/UserService";
+import { ChatService, chatManager } from "../../services/ChatService";
 
-export class ChatMembersList implements iComponent{
+export class ChatMembersList implements iComponent {
     containerMembersList: HTMLElement;
     membersListBlock: HTMLElement;
     selectChat$: iObservable<string>;
@@ -39,7 +40,7 @@ export class ChatMembersList implements iComponent{
         this.containerMembersList.classList.add("noneVisible");
         this.selectChat$.subscribe((data) => {
             if (window.innerWidth >= 1200) {
-                console.log('remove')
+                console.log("remove");
                 if (!data) {
                     this.containerMembersList.classList.add("noneVisible");
                 } else {
@@ -48,24 +49,20 @@ export class ChatMembersList implements iComponent{
             }
         });
         this.selectChat$.subscribe((chatID) => {
-            channelInput$.next({id: componentsID.chatMemberList,command: chatMemberListCommand.GET_CHAT, payload: { chatID: chatID } });
-            let subsc = channelOutput$.subscribe((data) => {
-                if (data.command === chatMemberListCommand.GET_CHAT) {
-                    if (!data?.payload?.chat) return;
-                    this.setList(data.payload.chat.members);
-                    subsc.unsubscribe();
-                }
-            }); 
+            const chat = new ChatService(chatID);
+            chat.getChat((chat) => {
+                if (!chat) return;
+                this.setList(chat.members);
+            });
         });
-        channelOutput$.subscribe((data) => {
-            if (data.command === chatMemberListCommand.LEAVE_CHAT && data.payload.chatID === this.selectChat$.getValue()) {
-                let list = this.list$.getValue();
-                list = list.filter((item) => item.email !== data.payload.user.email);
-                this.setList(list);
-            } else if (data.command === chatMemberListCommand.FRIEND_ADD_TO_CHAT) {
-                this.pushList(data.payload.user);
-            }
-        });
+        chatManager.leaveChat$.subscribe((data)=>{
+            let list = this.list$.getValue();
+            list = list.filter((item) => item.email !== data.user.email);
+            this.setList(list);
+        })
+        chatManager.addMember$.subscribe((data)=>{
+            this.pushList(data.user);
+        })
         return this.containerMembersList;
     }
 
@@ -113,23 +110,25 @@ export class ChatMembersList implements iComponent{
             this.timeUpdater.push(intervalId);
         }
 
-        const subscribe = channelOutput$.subscribe((data) => {
-            if (data.command === chatMemberListCommand.SET_USER_PHOTO && data.payload?.user?.email === member.email) {
-                const timestamp = new Date().getTime();
-                memberPhoto.src = `${data.payload.user.photo}?timestamp=${timestamp}`;
-            } else if (data.command === chatMemberListCommand.ACTIVITY && member.email === data.payload.user.email) {
-                member.lastActivity = data.payload.user.lastActivity;
+        const setActivitySUBC = userService.activity$.subscribe((userInfo) => {
+            if (userInfo.email !== member.email) return;
+            member.lastActivity = userInfo.lastActivity;
 
-                let activityFormatDate = formatDateString(data.payload.user.lastActivity);
-                memberActivity.textContent = activityFormatDate;
-                if (activityFormatDate !== "В сети") {
-                    last_onlineSign.innerHTML = "Был(а)&nbsp;";
-                } else {
-                    last_onlineSign.textContent = "";
-                }
+            let activityFormatDate = formatDateString(userInfo.lastActivity);
+            memberActivity.textContent = activityFormatDate;
+            if (activityFormatDate !== "В сети") {
+                last_onlineSign.innerHTML = "Был(а)&nbsp;";
+            } else {
+                last_onlineSign.textContent = "";
             }
         });
-        this.eventSList.push(subscribe);
+        const setPhotoSUBC = userService.setPhoto$.subscribe((userInfo) => {
+            if (userInfo.email !== member.email) return;
+            const timestamp = new Date().getTime();
+            memberPhoto.src = `${userInfo.photo}?timestamp=${timestamp}`;
+        });
+        this.eventSList.push(setActivitySUBC);
+        this.eventSList.push(setPhotoSUBC);
 
         let list = this.list$.getValue();
         list.push(member);
