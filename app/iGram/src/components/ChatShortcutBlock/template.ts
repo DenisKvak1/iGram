@@ -1,6 +1,3 @@
-export const chatListT = `
-    <div class="chatList"></div>
-`
 export const chatElementT = `
     <div class="chatItem">
          <img src="/" alt="" class="chatPhotoInList">

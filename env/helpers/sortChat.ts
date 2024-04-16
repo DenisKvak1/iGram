@@ -1,11 +1,11 @@
-import { iChat } from "../types";
+import { iReactiveChatInfo } from "../types";
 
-export function sortChatsByNewest(chats: Array<iChat>) {
+export function sortChatsByNewest(chats: Array<iReactiveChatInfo>) {
     return chats.sort((chatA, chatB) => {
-        const findLatestMessageTime = (chat: iChat): Date | null => {
+        const findLatestMessageTime = (chat: iReactiveChatInfo): Date | null => {
             let latestTime: Date | null = null;
-            chat.history.forEach(message => {
-                const messageTime = new Date(message.timestamp);
+            chat.history.getValue().forEach(message => {
+                const messageTime = new Date(message.getValue().timestamp);
                 if (!latestTime || messageTime > latestTime) {
                     latestTime = messageTime;
                 }

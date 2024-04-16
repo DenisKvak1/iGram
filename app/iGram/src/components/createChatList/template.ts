@@ -13,15 +13,7 @@ export const createGroupMenuT = `
         <button class="createGroup">Создать группу</button>
     </div>
 `
-export const createGroupItemT = `
-    <div class="friend">
-        <div class="chatInfoBlock">
-            <img src="/" alt="" class="chatPhoto">
-            <span class="chat_name"></span>
-            <input type="checkbox">
-        </div>
-    </div>
-`
+
 export const friendsEmptyCGT = `
     <span class="friendsEmpty">У вас нету друзей😪</span>
 `

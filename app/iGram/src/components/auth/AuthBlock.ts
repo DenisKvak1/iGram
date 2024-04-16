@@ -1,10 +1,10 @@
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { AuthBlockTemplate } from "./template";
-import { IAppController, iComponent } from "../../../../../env/types";
+import { IAppController, iComponentOLD } from "../../../../../env/types";
 import { AuthFormFabric } from "./Fabric/fabricBlanks";
 import { authController } from "../../services/AuthController";
 
-export class AuthBlock implements iComponent {
+export class AuthBlock implements iComponentOLD {
     controller: IAppController;
     private AuthBlock: HTMLElement;
 

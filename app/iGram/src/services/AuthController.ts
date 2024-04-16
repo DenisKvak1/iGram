@@ -3,7 +3,7 @@ import {
     credentials,
     IAuthController,
     iObservable,
-    registerOptions
+    registerOptions, serverResponse
 } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
 
@@ -12,6 +12,8 @@ export class AuthController implements IAuthController {
 
     constructor() {
         this.isAuth$ = new Observable<boolean>();
+
+        this.checkAuth()
     }
 
     login(credentials: credentials, errorCallback: Function): void {
@@ -31,6 +33,12 @@ export class AuthController implements IAuthController {
     logout(): void {
         localStorage.setItem("jwt", null);
         this.isAuth$.next(false);
+    }
+
+    private checkAuth() {
+        server.checkAuth().then((resp: serverResponse) => {
+            this.isAuth$.next(resp.status === "OK");
+        });
     }
 }
 

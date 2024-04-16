@@ -1,4 +1,4 @@
-import { iObservable } from "../types";
+import { iObservable, iSubscribe } from "../types";
 
 export class Observable<T> implements iObservable<T> {
     private listeners: ((eventData: any) => void)[];
@@ -11,7 +11,7 @@ export class Observable<T> implements iObservable<T> {
         this.onceListeners = [];
     }
 
-    subscribe(callback: (eventData?: T) => void): { unsubscribe: () => void } {
+    subscribe(callback: (eventData?: T) => void): iSubscribe {
         this.listeners.push(callback);
 
         return {
@@ -36,11 +36,11 @@ export class Observable<T> implements iObservable<T> {
         this.onceListeners.push(callback);
     }
 
-    onceOr(conditions: boolean, callback: (eventData?: T) => void):void {
-        if(!conditions){
+    onceOr(conditions: boolean, callback: (eventData?: T) => void): void {
+        if (!conditions) {
             this.onceListeners.push(callback);
         } else {
-            callback()
+            callback();
         }
     }
 
@@ -54,5 +54,13 @@ export class Observable<T> implements iObservable<T> {
 
     unsubscribeAll(): void {
         this.listeners = [];
+    }
+
+    toString() {
+        return this.value.toString();
+    }
+
+    valueOf() {
+        return +this.value;
     }
 }

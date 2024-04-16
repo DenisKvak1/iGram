@@ -1,11 +1,13 @@
-import { iObservable, IUserService, serverWS_COMMANDS, UserInfo } from "../../../../env/types";
+import { iReactiveUserInfo, IUserService, serverWS_COMMANDS, UserInfo } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
 import { server } from "../modules/Server";
+import { ReactiveUserInfo } from "./ReactiveUserInfo";
 
 export class UserService implements IUserService {
-    setPhoto$: iObservable<UserInfo>;
-    activity$: iObservable<UserInfo>;
-    friendRequest$: iObservable<UserInfo>;
+    setPhoto$ = new Observable<UserInfo>();
+    activity$ = new Observable<UserInfo>()
+    friendRequest$ = new Observable<iReactiveUserInfo>();
+    addFriend$ = new Observable<iReactiveUserInfo>()
 
     constructor() {
         this.init();
@@ -19,6 +21,7 @@ export class UserService implements IUserService {
         this.setupSetPhotoEvent();
         this.setupSetActivityEvent();
         this.setupFriendRequestEvent();
+        this.setupPushFriend()
     }
 
     setPhoto(photo: ArrayBuffer): void {
@@ -55,9 +58,23 @@ export class UserService implements IUserService {
         });
     }
 
+    getReactiveFriendsList(callback: (FriendInviteList: Array<iReactiveUserInfo>) => void): void {
+        this.getFriendsList((users) => {
+            const reactiveUsers = users.map((user) => new ReactiveUserInfo(user));
+            callback(reactiveUsers);
+        });
+    }
+
     getFriendsInviteList(callback: (FriendInviteList: Array<UserInfo>) => void): void {
         server.getFriendsInvites().then((msg) => {
             callback(msg.requests);
+        });
+    }
+
+    getReactiveFriendsInviteList(callback: (FriendInviteList: Array<iReactiveUserInfo>) => void) {
+        this.getFriendsInviteList((users) => {
+            const reactiveUsers = users.map((user) => new ReactiveUserInfo(user));
+            callback(reactiveUsers);
         });
     }
 
@@ -69,7 +86,6 @@ export class UserService implements IUserService {
 
 
     private setupSetPhotoEvent(): void {
-        this.setPhoto$ = new Observable<UserInfo>();
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.SET_USER_PHOTO) return;
 
@@ -78,21 +94,30 @@ export class UserService implements IUserService {
     }
 
     private setupFriendRequestEvent(): void {
-        this.friendRequest$ = new Observable();
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.FRIEND_REQUEST) return;
 
-            this.friendRequest$.next(msg.payload.from as UserInfo);
+            const reactiveUser = new ReactiveUserInfo(msg.payload.from as UserInfo);
+            this.friendRequest$.next(reactiveUser);
         });
     }
 
     private setupSetActivityEvent(): void {
-        this.activity$ = new Observable<UserInfo>();
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.ACTIVITY) return;
 
             this.activity$.next(msg.payload.user);
         });
+    }
+
+    private setupPushFriend(){
+        server.event$.subscribe((msg) => {
+            if (msg.command !== serverWS_COMMANDS.ADD_FRIEND) return;
+
+            const reactiveUser = new ReactiveUserInfo(msg.payload.user)
+            this.addFriend$.next(reactiveUser);
+        });
+
     }
 }
 

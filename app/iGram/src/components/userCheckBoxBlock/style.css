@@ -1,0 +1,30 @@
+.userInfoBlock {
+    display: flex;
+    border-radius: 6px;
+    padding: 5px;
+    width: 100%;
+    height: 55px;
+    align-items: center;
+    gap: 10px;
+    background-color: rgba(56, 135, 238, 0.185);
+}
+
+.userInfoBlock input {
+    height: 100%;
+    width: 45px !important;
+}
+
+.chatPhoto {
+    flex-shrink: 0;
+    height: 100%;
+    width: 45px;
+    border-radius: 50%;
+}
+
+.chat_name {
+    font-weight: 600;
+    font-size: 18.75px;
+    flex-grow: 1;
+}
+
+

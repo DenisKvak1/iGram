@@ -1,108 +1,98 @@
-import { iComponent, iModal, iObservable, UserInfo } from "../../../../../env/types";
+import { iReactiveUserInfo, iComponent, iModal } from "../../../../../env/types";
 import "./style.css";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { Modal } from "../modal/Modal";
-import { buttonOpenListInvitedTemplate, friendsEmpty, friendsListTemplate, friendTemplate } from "./template";
-import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
-import { Observable } from "../../../../../env/helpers/observable";
+import { buttonOpenListInvitedTemplate, friendsEmpty, friendsListTemplate } from "./template";
 import { userService } from "../../services/UserService";
+import { FriendInviteBlock } from "../friendInviteBlock/friendInviteBlock";
+import { listObserver } from "../../../../../env/reactivity2.0/types";
+import { ReactiveList } from "../../../../../env/reactivity2.0/reactivityList";
+import { conditionalRendering } from "../../../../../env/reactivity2.0/conditionalRendering";
+import { registerReactivityList } from "../../../../../env/reactivity2.0/registerReactivityList";
+import { Collector } from "../../../../../env/helpers/Collector";
+
 
 export class ListInvitedFriends implements iComponent {
-    modal: iModal;
-    friendsList: HTMLElement;
-    openButton: HTMLElement;
-    private list$: iObservable<Array<UserInfo>>;
-    eventSList: Array<{ unsubscribe: () => void }>;
+    private modal: iModal;
+    private friendsList: HTMLElement;
+    private openButton: HTMLElement;
+    private friendsListBlock: HTMLElement;
+    private emptyBlock: HTMLElement;
+    private readonly collector = new Collector();
+    private readonly list: listObserver<iReactiveUserInfo>;
 
     constructor() {
-        this.list$ = new Observable<Array<UserInfo>>([]);
-        this.eventSList = [];
+        this.list = new ReactiveList([]);
+
+        this.init();
     }
 
+    private init() {
+        this.initHTML();
+        this.initModal();
+        this.initFriendList();
+        this.initEmptyBlock();
+        this.initFriendsList();
+        this.setupHandlerPushFriend();
+    }
 
-    createElement() {
-        const openButton = createElementFromHTML(buttonOpenListInvitedTemplate);
-        const friendsListBlock = createElementFromHTML(friendsListTemplate);
+    private initHTML() {
+        this.emptyBlock = createElementFromHTML(friendsEmpty);
+        this.openButton = createElementFromHTML(buttonOpenListInvitedTemplate);
+        this.friendsListBlock = createElementFromHTML(friendsListTemplate);
+        this.friendsList = this.friendsListBlock.querySelector(".friendsList") as HTMLElement;
+    }
 
-        this.friendsList = friendsListBlock.querySelector(".friendsList") as HTMLElement;
-        this.modal = new Modal(friendsListBlock);
+    private initModal() {
+        this.modal = new Modal(this.friendsListBlock);
         this.modal.setOptions({ maxWidth: "95%", padding: "0px" });
-        openButton.onclick = () => this.modal.open();
-        this.openButton = openButton;
+        this.openButton.onclick = () => this.modal.open();
+    }
 
-        let emptyBlock = createElementFromHTML(friendsEmpty);
-        this.friendsList.appendChild(emptyBlock);
+    private initEmptyBlock() {
+        conditionalRendering(this.list, () => this.list.getValue().length === 0, this.emptyBlock, this.friendsList);
+    }
 
+    private initFriendList() {
+        this.collector.collect(
+            registerReactivityList<iReactiveUserInfo>(FriendInviteBlock, this.friendsList, this.list as any, (friendBlock: any) => {
+                this.friendInviteBlockEventHandler(friendBlock);
+            })
+        );
+    }
 
-        this.list$.subscribe((data) => {
-            if (data.length === 0) {
-                if (this.friendsList.querySelector(".friendsEmpty")) return;
+    private friendInviteBlockEventHandler(friendBlock: any) {
+        this.collector.collect(
+            friendBlock.friendResponse$.subscribe((data: { accept: boolean, email: string }) => {
+                userService.friendResponse(data.email, data.accept);
+                const list = this.list.getValue();
+                const index = list.findIndex((item) => item.getValue().email.getValue() === data.email);
+                this.list.delete(index);
+            })
+        );
+    }
 
-                this.friendsList.appendChild(emptyBlock);
-            } else {
-                emptyBlock.remove();
-            }
+    private initFriendsList() {
+        userService.getReactiveFriendsInviteList((friends) => {
+            this.list.set(friends);
         });
-        userService.getFriendsInviteList((friends) => {
-            this.setList(friends);
-        });
+    }
 
-        userService.friendRequest$.subscribe((user) => {
-            this.pushList(user);
-        });
+    private setupHandlerPushFriend() {
+        this.collector.collect(
+            userService.friendRequest$.subscribe((user) => {
+                this.list.push(user);
+            })
+        );
+    }
+
+    getComponent() {
         return this.openButton;
     }
 
-    getElement() {
-        return this.openButton;
-    }
-
-    setList(friends: Array<UserInfo>) {
-        this.friendsList.innerHTML = "";
-        this.eventSList.forEach((item) => item.unsubscribe());
-        this.eventSList = [];
-
-        friends.forEach((item) => {
-            this.pushList(item);
-        });
-        this.list$.next(friends);
-    }
-
-    pushList(friend: UserInfo) {
-        const friendBlock = createElementFromHTML(friendTemplate);
-        const acceptBtn = friendBlock.querySelector(".accept_friend") as HTMLButtonElement;
-        const rejectBtn = friendBlock.querySelector(".reject_friend") as HTMLButtonElement;
-        const memberPhoto = friendBlock.querySelector(".chatPhoto") as HTMLImageElement;
-        memberPhoto.src = friend.photo;
-
-        const subscribe = userService.setPhoto$.subscribe((user) => {
-            if (user?.email !== friend.email) return;
-
-            const timestamp = new Date().getTime();
-            memberPhoto.src = `${user.photo}?timestamp=${timestamp}`;
-        });
-        this.eventSList.push(subscribe);
-
-        acceptBtn.onclick = () => {
-            userService.friendResponse(friend.email, true);
-            friendBlock.remove();
-            let list = this.list$.getValue();
-            list.splice(list.indexOf(friend), 1);
-            this.list$.next(list);
-        };
-        rejectBtn.onclick = () => {
-            userService.friendResponse(friend.email, false);
-            friendBlock.remove();
-            let list = this.list$.getValue();
-            list.splice(list.indexOf(friend), 1);
-            this.list$.next(list);
-        };
-        let chatName = friendBlock.querySelector(".chat_name") as HTMLElement;
-        chatName.textContent = friend.name;
-
-        let list = this.list$.getValue();
-        list.push(friend);
-        this.list$.next(list);
-        appendChild(this.friendsList, friendBlock);
+    unMounted() {
+        this.collector.clear();
+        this.friendsListBlock.remove();
+        this.openButton.remove();
     }
 }

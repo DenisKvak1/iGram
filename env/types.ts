@@ -1,5 +1,12 @@
+import { listObserver } from "./reactivity2.0/types";
+
+export type iCollector = {
+    collect(...collectible: iSubscribe[]): void
+    clear(): void
+}
+export type iSubscribe = { unsubscribe: () => void }
 export type iObservable<T> = {
-    subscribe: (callback: (eventData: T) => void) => { unsubscribe: () => void };
+    subscribe: (callback: (eventData: T) => void) => iSubscribe;
     next: (eventData?: T) => void
     unsubscribeAll: () => void
     getValue: () => T
@@ -23,6 +30,7 @@ export type iServer = {
 }
 
 export const enum serverWS_COMMANDS {
+    ADD_FRIEND = "addFriend",
     FRIEND_REQUEST = "friendRequest",
     FRIEND_RESPONSE = "friendResponse",
     CHAT_CREATED = "chatCreated",
@@ -60,9 +68,13 @@ export type componentsEvent = {
         email: string
     }>
 }
+export type iComponentOLD = {
+    createElement: () => HTMLElement
+    getElement: () => HTMLElement
+}
 export type iComponent = {
-    createElement: () => void
-    getElement: () => void
+    getComponent: () => HTMLElement
+    unMounted: () => void
 }
 
 export const enum componentsID {
@@ -112,20 +124,43 @@ export const enum RESPONSE_STATE {
     ERROR = "ERROR"
 }
 
+export type iReactiveMessage = {
+    from: iReactiveUserInfo
+    to: string
+    text: iObservable<string>
+    timestamp: string
+    destroy: () => void
+};
 export type fromChat = {
     from: string,
-    chat: iChat
+    chat: iReactiveChatInfo
 };
 export type ChatUserInfo = {
     chatID: string;
     user: UserInfo;
 };
+export type iReactiveChatInfo = {
+    id: string;
+    chatName: iObservable<string>;
+    members: listObserver<UserInfo>;
+    history: listObserver<iReactiveMessage>
+    photo: iObservable<string>;
+    destroy: () => void
+}
 export type UserInfo = {
     email: string
     name: string
     friends: Array<string>
     photo: string
     lastActivity: string
+}
+export type iReactiveUserInfo = {
+    email: iObservable<string>
+    name: iObservable<string>
+    friends: iObservable<Array<string>>
+    photo: iObservable<string>
+    lastActivity: iObservable<string>
+    destroy: () => void
 }
 export type iChat = {
     id: string
@@ -154,14 +189,12 @@ export type serverMessage = {
 }
 export type message = {
     from: UserInfo,
-    fromName: string
     to?: string,
     text: string,
     timestamp: string
 }
 export type messageClient = {
     from: string,
-    fromName?: string
     to?: string,
     text: string,
     timestamp?: string
@@ -174,37 +207,44 @@ export type messageClient = {
 // }
 export type IAuthController = {
     isAuth$: iObservable<boolean>;
-    login: (credentials: credentials, errorCallback:Function) => void
-    register: (credentials: credentials, registerOptions: registerOptions, errorCallback:Function) => void
+    login: (credentials: credentials, errorCallback: Function) => void
+    register: (credentials: credentials, registerOptions: registerOptions, errorCallback: Function) => void
     logout: () => void
 }
 export type IUserService = {
     setPhoto$: iObservable<UserInfo>;
     activity$: iObservable<UserInfo>;
-    friendRequest$: iObservable<UserInfo>
+    friendRequest$: iObservable<iReactiveUserInfo>;
     setPhoto: (photo: ArrayBuffer) => void;
     friendRequest: (login: string) => void;
     friendResponse: (login: string, accept: boolean) => void;
     getFriendsList: (callback: (FriendList: Array<UserInfo>) => void) => void;
+    getReactiveFriendsList: (callback: (FriendInviteList: Array<iReactiveUserInfo>) => void) => void
     getFriendsInviteList: (callback: (FriendInviteList: Array<UserInfo>) => void) => void;
+    getReactiveFriendsInviteList: (callback: (FriendInviteList: Array<iReactiveUserInfo>) => void) => void
     getUserInfo: (login: string, callback: (UserInfo: UserInfo) => void) => void;
 };
 export type IChatService = {
-    message$: iObservable<message>;
+    load$: iObservable<boolean>
+    chat$: iObservable<iReactiveChatInfo>;
+    pushMessage$: iObservable<message>;
     setPhoto$: iObservable<{ chatID: string, photo: string }>;
+    addMember$: iObservable<UserInfo>;
     setPhoto: (photo: ArrayBuffer) => void
     pushMessage: (message: messageClient) => void
     addUser: (login: string) => void
-    getChat: (callback: (chat: iChat) => void) => void
     leaveChat: () => void
 }
 export type IChatManager = {
     leaveChat$: iObservable<{ chatID: string, user: UserInfo }>;
     message$: iObservable<message>;
-    chatCreated$: iObservable<{ from: string, chat: iChat }>;
+    chatCreated$: iObservable<fromChat>;
     addMember$: iObservable<{ chatID: string, user: UserInfo }>
     createChat: (login: Array<string>, chatName: string) => void
-    getChats: (callback: (chats: Array<iChat>) => void) => void
+    getChats: () => Promise<Array<iChat>>
+    getReactiveChats: () => Promise<Array<iReactiveChatInfo>>
+    getChat: (chatID: string) => Promise<iChat>
+    getReactiveChat: (chatID: string) => Promise<iReactiveChatInfo>
 }
 export type IAppController = {
     root: HTMLElement

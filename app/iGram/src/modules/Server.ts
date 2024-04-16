@@ -29,7 +29,6 @@ export class Server implements iServer {
             }
         }, 3000);
         this.event$ = new Observable<serverMessage>();
-
         this.init();
     }
 

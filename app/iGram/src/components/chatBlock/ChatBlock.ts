@@ -1,192 +1,158 @@
-import { iComponent, iObservable, message } from "../../../../../env/types";
+import { iComponent, iObservable, iReactiveChatInfo } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
-import { chatInfoBlockT, chatTemplate, messageFromT, messageMeT, sendChatBlockT } from "./template";
+import { chatInfoBlockT, chatTemplate, sendChatBlockT } from "./template";
 import "./style.css";
 import { Observable } from "../../../../../env/helpers/observable";
-import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { AddUserToChat } from "../addUserToGroup/addUserToChat";
-import { formatDateStringToMessage } from "../../../../../env/helpers/formatTime";
-import { ChatService, chatManager } from "../../services/ChatService";
-import { userService } from "../../services/UserService";
+import { chatManager, selectChatService } from "../../services/ChatService";
+import { MessageBlock } from "../messageBlock/messageBlock";
+import { registerReactivityList } from "../../../../../env/reactivity2.0/registerReactivityList";
+import { conditionalRendering } from "../../../../../env/reactivity2.0/conditionalRendering";
+import { Collector } from "../../../../../env/helpers/Collector";
+import { reactivity } from "../../../../../env/reactivity2.0/reactivity";
+import { setupLoadPhotoEvent } from "../../../../../env/helpers/photoLoad";
 
 export class ChatBlock implements iComponent {
-    chatBlock: HTMLElement;
-    messages$: iObservable<Array<message>>;
-    messagesBlock: HTMLElement;
-    selectChat$: iObservable<string>;
+    private chatBlock: HTMLElement;
+    private messagesBlock: HTMLElement;
+    private toSendBlock: HTMLElement;
+    private toChatInfoBlock: HTMLElement;
+    private leaveGroupBTN: HTMLButtonElement;
+    private chatNameElement: HTMLElement;
+    private collector = new Collector();
+    private tempCollector = new Collector();
     toChatList$: iObservable<null>;
     toMemberList$: iObservable<null>;
 
-    eventSList: Array<{ unsubscribe: () => void }>;
 
-    constructor(selectChat: iObservable<string>) {
-        this.selectChat$ = selectChat;
-        this.messages$ = new Observable<Array<message>>([]);
+    constructor() {
         this.toChatList$ = new Observable();
         this.toMemberList$ = new Observable();
-        this.eventSList = [];
+
+        this.init();
     }
 
-    createElement() {
+    private init() {
+        this.initHTML();
+        this.setupContentHTML();
+        this.setupEmptyChat();
+        this.setupPhotoLoaderHandle();
+        this.setupLeaveGroupHandle();
+        this.setupSelectChatHandle();
+        this.setupSendMessageHandle();
+        this.setupToChatListHandle();
+        this.setupNewMessageHandler();
+    }
+
+    private initHTML() {
         this.chatBlock = createElementFromHTML(chatTemplate);
+        this.toSendBlock = createElementFromHTML(sendChatBlockT);
+        this.toChatInfoBlock = createElementFromHTML(chatInfoBlockT);
+        this.leaveGroupBTN = this.toChatInfoBlock.querySelector(".leaveGroup") as HTMLButtonElement;
+        const addToGroup = new AddUserToChat();
+        this.leaveGroupBTN.insertAdjacentElement("beforebegin", addToGroup.getComponent());
         this.messagesBlock = this.chatBlock.querySelector(".mainMessageBlock");
+    }
 
-        this.selectChat$.subscribe(async (chatID) => {
-            if (!chatID) return;
-            const chat = new ChatService(chatID)
-            chat.getChat((chat) => {
-                if (!chat) return;
-                let historyMessages = chat.history;
-                let groupName = chat.chatName;
-                let chatNameElement = this.chatBlock.querySelector(".chat_name") as HTMLElement;
-                chatNameElement.textContent = groupName;
-                chatNameElement.onclick = () => {
-                    this.toMemberList$.next();
-                };
-                this.setMessages(historyMessages);
-            })
+    private setupEmptyChat() {
+        this.collector.collect(
+            conditionalRendering(chatManager.selectChat$, () => Boolean(chatManager.selectChat$.getValue()), this.toChatInfoBlock, this.chatBlock),
+            conditionalRendering(chatManager.selectChat$, () => Boolean(chatManager.selectChat$.getValue()), this.messagesBlock, this.chatBlock),
+            conditionalRendering(chatManager.selectChat$, () => Boolean(chatManager.selectChat$.getValue()), this.toSendBlock, this.chatBlock)
+        );
+        this.messagesBlock = this.chatBlock.querySelector(".mainMessageBlock");
+    }
+
+    private setupContentHTML() {
+        selectChatService.chat$.onceOr(Boolean(selectChatService.chat$.getValue()), () => {
+            this.setupEventMessageAndName(selectChatService.chat$.getValue());
         });
-        chatManager.message$.subscribe((msg)=>{
-            if(msg.to !== this.selectChat$.getValue()) return
-            this.pushMessage(msg);
-        })
+        this.collector.collect(
+            selectChatService.chat$.subscribe((chat) => {
+                this.setupEventMessageAndName(chat);
+            })
+        );
+    }
 
-        let checkEmpty = (data: string) => {
-            let sendBlock = this.chatBlock.querySelector(".sendBlock");
-            let chatInfoBlock = this.chatBlock.querySelector(".chatInfoBlock");
+    private setupEventMessageAndName(chat: iReactiveChatInfo) {
+        this.tempCollector.clear();
+        this.tempCollector.collect(
+            registerReactivityList(MessageBlock, this.messagesBlock, chat.history),
+            reactivity(chat.chatName, this.chatNameElement)
+        );
+    }
 
-            if (!data) {
-                if (!sendBlock && !chatInfoBlock) return;
-                sendBlock.remove();
-                chatInfoBlock.remove();
-                while (this.messagesBlock.firstChild) {
-                    this.messagesBlock.firstChild.remove();
-                }
-            } else {
-                if (sendBlock) return;
+    private setupPhotoLoaderHandle() {
+        const uploadPhotoInput = this.toChatInfoBlock.querySelector(".filePhotoLoad") as HTMLInputElement;
+        setupLoadPhotoEvent(uploadPhotoInput, (bufferedPhoto) => selectChatService.setPhoto(bufferedPhoto));
+    }
 
-                const toSendBlock = createElementFromHTML(sendChatBlockT);
-                const toChatInfoBlock = createElementFromHTML(chatInfoBlockT);
-                const inputMessage = toSendBlock.querySelector(".sendBlock input") as HTMLInputElement;
-                const sendMessageBtn = toSendBlock.querySelector(".sendBlock button") as HTMLButtonElement;
-                const uploadPhoto = toChatInfoBlock.querySelector(".filePhotoLoad") as HTMLInputElement;
-                const leaveGroup = toChatInfoBlock.querySelector(".leaveGroup") as HTMLButtonElement;
-                const addToGruup = new AddUserToChat(this.selectChat$);
-                const toChatListBtn = toChatInfoBlock.querySelector(".toChat") as HTMLButtonElement;
-                toChatListBtn.onclick = () => {
-                    this.toChatList$.next();
-                    this.selectChat$.next(null);
-                };
-
-                leaveGroup.insertAdjacentElement("beforebegin", addToGruup.createElement());
-
-                uploadPhoto.onchange = () => {
-                    const selectedFile = uploadPhoto.files?.[0];
-
-                    if (selectedFile && (selectedFile.type === "image/jpeg" || selectedFile.type === "image/png")) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            const arrayBuffer = event.target?.result as ArrayBuffer;
-                            const uint8Array = new Uint8Array(arrayBuffer);
-                            const chat = new ChatService(this.selectChat$.getValue());
-                            chat.setPhoto(uint8Array);
-                        };
-
-                        reader.readAsArrayBuffer(selectedFile);
-                    } else {
-                        alert("Пожалуйста, выберите файл в формате JPEG или PNG.");
-                        uploadPhoto.value = "";
-                    }
-
-                };
-                let sendMessage = () => {
-                    if (!inputMessage.value) return;
-                    const chat = new ChatService(this.selectChat$.getValue());
-                    chat.pushMessage({
-                        from: localStorage.getItem("email"),
-                        to: this.selectChat$.getValue(),
-                        text: inputMessage.value
-                    });
-                    inputMessage.value = "";
-                };
-                inputMessage.onkeydown = (event) => {
-                    if (event.key === "Enter") {
-                        sendMessage();
-                    }
-                };
-                sendMessageBtn.onclick = () => {
-                    sendMessage();
-                };
-                leaveGroup.onclick = () => {
-                    const chat = new ChatService(this.selectChat$.getValue())
-                    chat.leaveChat()
-                    if (window.innerWidth < 1200) {
-                        this.toChatList$.next();
-                    }
-                };
-                appendChild(this.chatBlock, toSendBlock);
-                this.chatBlock.insertAdjacentElement("afterbegin", toChatInfoBlock);
+    private setupLeaveGroupHandle() {
+        this.leaveGroupBTN.onclick = () => {
+            selectChatService.leaveChat();
+            if (window.innerWidth < 1200) {
+                this.toChatList$.next();
             }
         };
-        checkEmpty(this.selectChat$.getValue());
-        this.selectChat$.subscribe((data) => {
-            checkEmpty(data);
-        });
-        return this.chatBlock;
     }
 
-    getElement() {
-        return this.chatBlock;
-    }
-
-    setMessages(messages: Array<message>) {
-        this.messages$.next(messages);
-
-        this.messagesBlock.innerHTML = "";
-        this.eventSList.forEach((item) => item.unsubscribe());
-        this.eventSList = [];
-
-        messages.forEach((item) => {
-            this.pushMessage(item);
+    private setupSelectChatHandle() {
+        chatManager.selectChat$.once(() => {
+            this.chatNameElement = this.chatBlock.querySelector(".chat_name") as HTMLElement;
+            this.chatNameElement.onclick = () => {
+                this.toMemberList$.next();
+            };
         });
     }
 
-    pushMessage(messageP: message) {
-        let newMessages = this.messages$.getValue();
-        newMessages.push(messageP);
-        this.messages$.next(newMessages);
+    setupNewMessageHandler() {
+        chatManager.message$.subscribe((msg) => {
+            if (msg.to !== chatManager.selectChat$.getValue()) return;
 
-        let message = messageP.text;
-        let messageElement: HTMLElement;
+            setTimeout(() => this.messagesBlock.scrollTop = this.messagesBlock.scrollHeight);
+        });
+    }
 
-        if (messageP.from.email.toUpperCase() === localStorage.getItem("email").toUpperCase()) {
-            messageElement = createElementFromHTML(messageMeT);
-            messageElement.querySelector(".message_text").textContent = message;
-        } else {
-            messageElement = createElementFromHTML(messageFromT);
-            messageElement.querySelector(".message_text").textContent = message;
-            const userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;
-            userPhoto.src = messageP.from.photo;
-        }
-        const userName = messageElement.querySelector(".message_name");
-        userName.textContent = messageP.from.name;
+    private sendMessageFromInput() {
+        const inputMessage = this.toSendBlock.querySelector(".sendBlock input") as HTMLInputElement;
+        if (!inputMessage.value) return;
+        selectChatService.pushMessage({
+            from: localStorage.getItem("email"),
+            to: chatManager.selectChat$.getValue(),
+            text: inputMessage.value
+        });
+        inputMessage.value = "";
+    }
 
-        const subscribe = userService.setPhoto$.subscribe((user) => {
-            if (user?.email !== messageP.from.email) return;
+    private setupSendMessageHandle() {
+        const inputMessage = this.toSendBlock.querySelector(".sendBlock input") as HTMLInputElement;
+        const sendMessageBtn = this.toSendBlock.querySelector(".sendBlock button") as HTMLButtonElement;
 
-            if (messageP.from.email.toUpperCase() !== localStorage.getItem("email").toUpperCase()) {
-                const timestamp = new Date().getTime();
-                let userPhoto = messageElement.querySelector(".userPhoto") as HTMLImageElement;
-                userPhoto.src = `${user.photo}?timestamp=${timestamp}`;
+        inputMessage.onkeydown = (event) => {
+            if (event.key === "Enter") {
+                this.sendMessageFromInput();
             }
+        };
+        sendMessageBtn.onclick = () => {
+            this.sendMessageFromInput();
+        };
+    }
 
-        })
-        this.eventSList.push(subscribe);
-        messageElement.querySelector(".message_date").textContent = formatDateStringToMessage(messageP.timestamp);
+    private setupToChatListHandle() {
+        const toChatListBtn = this.toChatInfoBlock.querySelector(".toChat") as HTMLButtonElement;
+        toChatListBtn.onclick = () => {
+            this.toChatList$.next();
+            chatManager.selectChat$.next(null);
+        };
+    }
 
+    getComponent(): HTMLElement {
+        return this.chatBlock;
+    }
 
-        this.messagesBlock.scrollTop = this.messagesBlock.scrollHeight;
-        appendChild(this.messagesBlock, messageElement);
-        this.messagesBlock.scrollTop = this.messagesBlock.scrollHeight;
+    unMounted(): void {
+        this.tempCollector.clear();
+        this.collector.clear();
+        this.chatBlock.remove();
     }
 }

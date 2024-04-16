@@ -1,4 +1,4 @@
-import { IAppController, serverResponse } from "../../../env/types";
+import { IAppController } from "../../../env/types";
 import { MainPage } from "./pages/main/main";
 import { server } from "./modules/Server";
 import { authController } from "./services/AuthController";
@@ -10,9 +10,7 @@ export class AppController implements IAppController {
 
     private constructor() {
         this.root = document.getElementById("app");
-        server.checkAuth().then((resp: serverResponse) => {
-            authController.isAuth$.next(resp.status === "OK");
-        });
+
         authController.isAuth$.once(() => {
             this.init();
         });

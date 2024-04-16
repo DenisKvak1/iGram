@@ -1,0 +1,22 @@
+.createGroupMenu{
+    width: 300px;
+    min-height: 500px;
+    background-color: rgba(238, 238, 238, 0.493);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+@media (min-width: 480px) {
+    .createGroupMenu{
+        width: 350px;
+        padding: 30px;
+    }
+}
+@media (min-width: 760px) {
+    .createGroupMenu{
+        width: 400px;
+        padding: 30px;
+    }
+}

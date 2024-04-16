@@ -1,4 +1,4 @@
-import { iComponent, iObservable, UserInfo } from "../../../../../env/types";
+import { iComponentOLD, iObservable, iSubscribe, UserInfo } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
 import { containerMembersList, memberElement } from "./template";
@@ -6,19 +6,17 @@ import "./style.css";
 import { Observable } from "../../../../../env/helpers/observable";
 import { formatDateString } from "../../../../../env/helpers/formatTime";
 import { userService } from "../../services/UserService";
-import { ChatService, chatManager } from "../../services/ChatService";
+import { chatManager } from "../../services/ChatService";
 
-export class ChatMembersList implements iComponent {
+export class ChatMembersList implements iComponentOLD {
     containerMembersList: HTMLElement;
     membersListBlock: HTMLElement;
-    selectChat$: iObservable<string>;
     toChat$: iObservable<null>;
     private list$: iObservable<Array<UserInfo>>;
     private timeUpdater: Array<NodeJS.Timeout>;
-    eventSList: Array<{ unsubscribe: () => void }>;
+    eventSList: Array<iSubscribe>;
 
-    constructor(selectChat: iObservable<string>) {
-        this.selectChat$ = selectChat;
+    constructor() {
         this.list$ = new Observable<Array<UserInfo>>([]);
         this.toChat$ = new Observable();
         this.timeUpdater = [];
@@ -38,9 +36,8 @@ export class ChatMembersList implements iComponent {
             this.toChat$.next();
         };
         this.containerMembersList.classList.add("noneVisible");
-        this.selectChat$.subscribe((data) => {
+        chatManager.selectChat$.subscribe((data) => {
             if (window.innerWidth >= 1200) {
-                console.log("remove");
                 if (!data) {
                     this.containerMembersList.classList.add("noneVisible");
                 } else {
@@ -48,21 +45,20 @@ export class ChatMembersList implements iComponent {
                 }
             }
         });
-        this.selectChat$.subscribe((chatID) => {
-            const chat = new ChatService(chatID);
-            chat.getChat((chat) => {
+        chatManager.selectChat$.subscribe((chatID) => {
+            chatManager.getChat(chatID).then((chat) => {
                 if (!chat) return;
                 this.setList(chat.members);
             });
         });
-        chatManager.leaveChat$.subscribe((data)=>{
+        chatManager.leaveChat$.subscribe((data) => {
             let list = this.list$.getValue();
             list = list.filter((item) => item.email !== data.user.email);
             this.setList(list);
-        })
-        chatManager.addMember$.subscribe((data)=>{
+        });
+        chatManager.addMember$.subscribe((data) => {
             this.pushList(data.user);
-        })
+        });
         return this.containerMembersList;
     }
 

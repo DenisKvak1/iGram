@@ -1,30 +1,53 @@
 import {
-    ChatUserInfo, fromChat,
+    ChatUserInfo,
+    fromChat,
     iChat,
-    IChatService,
     IChatManager,
+    IChatService,
     iObservable,
+    iReactiveChatInfo,
     message,
     messageClient,
-    serverWS_COMMANDS
+    serverWS_COMMANDS,
+    UserInfo
 } from "../../../../env/types";
 import { server } from "../modules/Server";
 import { chatsCache } from "../modules/Cash/ChatsCash/ChatsCache";
 import { Observable } from "../../../../env/helpers/observable";
+import { ReactiveChatData } from "./ReactivityChatInfo";
+import { computed } from "../../../../env/reactivity2.0/computed";
 
-export class ChatService implements IChatService {
-    private readonly chatID: string;
-    message$: iObservable<message>;
+export class SelectChatService implements IChatService {
+    load$ = new Observable<boolean>(false);
+    chat$ = new Observable<iReactiveChatInfo>();
+    pushMessage$: iObservable<message>;
     setPhoto$: iObservable<{ chatID: string, photo: string }>;
+    addMember$: iObservable<UserInfo>;
 
-    constructor(chatID: string) {
-        this.chatID = chatID;
-
+    constructor() {
         this.init();
     }
 
     private init(): void {
         this.setupEvents();
+        this.initChat();
+    }
+
+    private initChat() {
+        if (chatManager.selectChat$.getValue()) {
+            chatManager.getReactiveChat(chatManager.selectChat$.getValue()).then((chat) => {
+                this.chat$.next(chat);
+                this.load$.next(true);
+            });
+        } else {
+            this.load$.next(true);
+        }
+
+        chatManager.selectChat$.subscribe((chatID) => {
+            chatManager.getReactiveChat(chatID).then((chat) => {
+                this.chat$.next(chat);
+            });
+        });
     }
 
     private setupEvents() {
@@ -33,10 +56,11 @@ export class ChatService implements IChatService {
     }
 
     addUser(login: string): void {
+        const selectChat = chatManager.selectChat$.getValue();
         server.push({
             command: serverWS_COMMANDS.FRIEND_ADD_TO_CHAT,
             payload: {
-                chatID: this.chatID,
+                chatID: selectChat,
                 login
             }
         });
@@ -49,52 +73,47 @@ export class ChatService implements IChatService {
         });
     }
 
-    getChat(callback: (chat: iChat) => void): void {
-        chatsCache.addChat(this.chatID);
-        chatsCache.getChat(this.chatID).then((chat: any) => {
-            if (chat) {
-                callback(chat);
-            }
-        });
-    }
 
     setPhoto(photo: ArrayBuffer): void {
+        const selectChat = chatManager.selectChat$.getValue();
         server.push({
             command: serverWS_COMMANDS.SET_CHAT_PHOTO,
             payload: {
                 photo,
-                chatID: this.chatID
+                chatID: selectChat
             }
         });
     }
 
     leaveChat(): void {
+        const selectChat = chatManager.selectChat$.getValue();
         server.push({
             command: serverWS_COMMANDS.LEAVE_CHAT,
             payload: {
-                chatID: this.chatID
+                chatID: selectChat
             }
         });
     }
 
-    private setupSetPhotoEvent(): void {
-        this.setPhoto$ = new Observable<{ chatID: string, photo: string }>();
-        server.event$.subscribe((msg) => {
-            if (msg.command !== serverWS_COMMANDS.SET_CHAT_PHOTO) return;
-            if (msg.payload.chatID !== this.chatID) return;
 
-            this.setPhoto$.next(msg.payload as any);
-        });
+    private setupSetPhotoEvent(): void {
+        this.setPhoto$ = computed(chatManager.setPhoto$, (): void | string => {
+            const setPhotoEvent = chatManager.setPhoto$.getValue();
+            const selectChat = chatManager.selectChat$.getValue();
+            if (selectChat !== setPhotoEvent?.chatID) return;
+
+            return setPhotoEvent.photo;
+        }).observer;
     }
 
     private setupMessageEvent(): void {
-        this.message$ = new Observable<message>();
-        server.event$.subscribe((msg) => {
-            if (msg.command !== serverWS_COMMANDS.MESSAGE) return;
-            if (msg.payload.to !== this.chatID) return;
+        this.pushMessage$ = computed(chatManager.message$, (): void | message => {
+            const msg = chatManager.message$.getValue();
+            const selectChat = chatManager.selectChat$.getValue();
+            if (msg?.to !== selectChat) return;
 
-            this.message$.next(msg.payload as message);
-        });
+            return msg;
+        }).observer;
     }
 }
 
@@ -103,12 +122,15 @@ export class ChatManager implements IChatManager {
     message$: iObservable<message>;
     leaveChat$: iObservable<ChatUserInfo>;
     addMember$: iObservable<ChatUserInfo>;
+    selectChat$: iObservable<string>;
+    setPhoto$: iObservable<{ chatID: string, photo: string }>;
 
     constructor() {
         this.init();
     }
 
     private init(): void {
+        this.createObservers();
         this.setupEvents();
     }
 
@@ -117,6 +139,16 @@ export class ChatManager implements IChatManager {
         this.setupChatCreateEvent();
         this.setupMessageEvent();
         this.setupAddMemberEvent();
+        this.setupSetPhotoEvent();
+    }
+
+    private createObservers() {
+        this.chatCreated$ = new Observable<fromChat>();
+        this.leaveChat$ = new Observable<ChatUserInfo>();
+        this.message$ = new Observable<message>();
+        this.addMember$ = new Observable<ChatUserInfo>();
+        this.setPhoto$ = new Observable();
+        this.selectChat$ = new Observable("");
     }
 
     createChat(logins: Array<string>, chatName: string): void {
@@ -129,24 +161,42 @@ export class ChatManager implements IChatManager {
         });
     }
 
-    getChats(callback: (chats: Array<iChat>) => void): void {
-        server.getChats().then((chats: any) => {
-            callback(chats.data);
-        });
+    async getChats() {
+        const chats = await server.getChats();
+        return chats.data;
     }
 
+    async getReactiveChats() {
+        const chats = await server.getChats();
+        const reactiveChat = chats.data.map((chat: iChat) => new ReactiveChatData(chat));
+        return reactiveChat;
+    }
+
+    async getChat(chatID: string) {
+        chatsCache.addChat((chatID));
+        const chat = await chatsCache.getChat((chatID));
+
+        return chat;
+    }
+
+    async getReactiveChat(chatID: string) {
+        chatsCache.addChat((chatID));
+        const chat = await chatsCache.getChat((chatID));
+        const reactiveChat = new ReactiveChatData(chat);
+
+        return reactiveChat;
+    }
 
     private setupChatCreateEvent() {
-        this.chatCreated$ = new Observable<{ from: string, chat: iChat }>();
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.CHAT_CREATED) return;
 
-            this.chatCreated$.next(msg.payload as fromChat);
+            const chat = new ReactiveChatData(msg.payload.chat);
+            this.chatCreated$.next({ from: msg.payload.from as string, chat: chat });
         });
     }
 
     private setupLeaveChatEvent(): void {
-        this.leaveChat$ = new Observable<ChatUserInfo>();
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.LEAVE_CHAT) return;
 
@@ -155,7 +205,6 @@ export class ChatManager implements IChatManager {
     }
 
     private setupMessageEvent(): void {
-        this.message$ = new Observable<message>();
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.MESSAGE) return;
 
@@ -164,13 +213,24 @@ export class ChatManager implements IChatManager {
     }
 
     private setupAddMemberEvent(): void {
-        this.addMember$ = new Observable<ChatUserInfo>();
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.FRIEND_ADD_TO_CHAT) return;
 
             this.addMember$.next(msg.payload as ChatUserInfo);
         });
     }
+
+    private setupSetPhotoEvent(): void {
+        server.event$.subscribe((msg) => {
+            if (msg.command !== serverWS_COMMANDS.SET_CHAT_PHOTO) return;
+
+            this.setPhoto$.next(msg.payload as any);
+        });
+    }
 }
 
 export const chatManager = new ChatManager();
+export const selectChatService = new SelectChatService();
+
+(window as any).chatManager = chatManager;
+(window as any).selectChatServer = selectChatService;

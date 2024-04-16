@@ -1,117 +1,118 @@
-import {
-    iComponent,
-    iModal,
-    iObservable,
-    UserInfo
-} from "../../../../../env/types";
-import { Observable } from "../../../../../env/helpers/observable";
+import { iComponent, iModal, iReactiveUserInfo } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { Modal } from "../modal/Modal";
-import { addToGroupItemT, addToGroupMenuT, friendsEmptyCGT, openButtonAddToGroup } from "./template";
-import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
-import { ChatService } from "../../services/ChatService";
+import { addToChatMenuT, friendsEmptyCGT, openButtonAddToChat } from "./template";
+import { selectChatService } from "../../services/ChatService";
 import { userService } from "../../services/UserService";
+import { listObserver } from "../../../../../env/reactivity2.0/types";
+import { ReactiveList } from "../../../../../env/reactivity2.0/reactivityList";
+import { registerReactivityList } from "../../../../../env/reactivity2.0/registerReactivityList";
+import { UserCheckBoxBlock } from "../userCheckBoxBlock/userCheckBoxBlock";
+import { Collector } from "../../../../../env/helpers/Collector";
+import { conditionalRendering } from "../../../../../env/reactivity2.0/conditionalRendering";
 
 export class AddUserToChat implements iComponent {
-    modal: iModal;
-    friendsList: HTMLElement;
-    openButton: HTMLElement;
-    private list$: iObservable<Array<UserInfo>>;
-    private listUserToGroup: Array<string>;
-    selectChat$: iObservable<string>;
+    private modal: iModal;
+    private friendsList: HTMLElement;
+    private openButton: HTMLElement;
+    private addToChatMenu: HTMLElement;
+    private emptyBlock: HTMLElement;
+    private addToChatBtn: HTMLButtonElement;
+    private readonly list: listObserver<iReactiveUserInfo>;
+    private listUserToChat: Array<string>;
+    private collector = new Collector();
 
-    constructor(selectChat: iObservable<string>) {
-        this.selectChat$ = selectChat;
-        this.list$ = new Observable<Array<UserInfo>>([]);
-        this.listUserToGroup = [];
+    constructor() {
+        this.list = new ReactiveList([]);
+        this.listUserToChat = [];
 
         this.init();
     }
 
-    init() {
-        const openButton = createElementFromHTML(openButtonAddToGroup);
-        const addToGroupMenu = createElementFromHTML(addToGroupMenuT);
+    private init() {
+        this.initHTML();
+        this.initHTMLContent();
+        this.initModal();
+        this.getFriendListHandler();
+        this.setupEvents();
+    }
 
-        this.friendsList = addToGroupMenu.querySelector(".friendsList") as HTMLElement;
-        this.modal = new Modal(addToGroupMenu);
-        this.openButton = openButton;
+    private initHTML() {
+        this.openButton = createElementFromHTML(openButtonAddToChat);
+        this.addToChatMenu = createElementFromHTML(addToChatMenuT);
+        this.emptyBlock = createElementFromHTML(friendsEmptyCGT);
+        this.friendsList = this.addToChatMenu.querySelector(".friendsList") as HTMLElement;
+        this.addToChatBtn = this.addToChatMenu.querySelector(".addToGroupBtn") as HTMLButtonElement;
+    }
 
+    private setupEvents() {
+        this.openButton.onclick = () => this.getFriendListHandler();
+        this.addToChatBtn.onclick = () => this.addUserHandler();
+        this.collector.collect(userService.addFriend$.subscribe((user) => this.pushFriendHandler(user)));
+    }
+
+    private initHTMLContent() {
+        this.collector.collect(
+            registerReactivityList(UserCheckBoxBlock, this.friendsList, this.list, (userCheckBoxComponent) => {
+                this.checkUserHandler(userCheckBoxComponent);
+            }),
+            conditionalRendering(this.list, () => this.list.getValue().length === 0, this.emptyBlock, this.friendsList)
+        );
+    }
+
+    private initModal() {
+        this.modal = new Modal(this.addToChatMenu);
         this.modal.setOptions({ padding: "0px" });
-        openButton.onclick = () => {
-            userService.getFriendsList((users) => {
-                const chat = new ChatService(this.selectChat$.getValue());
-                chat.getChat((chat) => {
-                    users = users.filter((item) => !chat.members.some((element) => element.email === item.email));
-                    return users ? this.setList(users) : null;
-                });
+    }
+
+    private getFriendListHandler() {
+        userService.getReactiveFriendsList((users) => {
+            const members = selectChatService.chat$.getValue().members.getValue();
+            users = users.filter((item) => !members.some((element) => element.getValue().email === item.email.getValue()));
+
+            this.list.set(users);
+        });
+        this.modal.open();
+    }
+
+    private pushFriendHandler(user: iReactiveUserInfo) {
+        const chatMember = selectChatService.chat$.getValue().members.getValue();
+        if (chatMember.some((member) => member.getValue().email === user.email.getValue())) return;
+
+        this.list.push(user);
+    }
+
+    private checkUserHandler(userCheckBoxComponent: any) {
+        this.collector.collect(
+            userCheckBoxComponent.check$.subscribe((event: { user: string, checked: boolean }) => {
+                if (event.checked) {
+                    this.listUserToChat.push(event.user);
+                } else {
+                    const index = this.listUserToChat.indexOf(event.user);
+                    this.listUserToChat.splice(index, 1);
+                }
+            })
+        );
+    }
+    
+    private addUserHandler() {
+        if (this.listUserToChat.length > 0) {
+            this.listUserToChat.forEach((login) => {
+                selectChatService.addUser(login);
             });
-
-            this.modal.open();
-        };
-        let emptyBlock = createElementFromHTML(friendsEmptyCGT);
-        this.friendsList.appendChild(emptyBlock);
-
-
-        this.list$.subscribe((data) => {
-            if (data.length === 0) {
-                if (this.friendsList.querySelector(".friendsEmpty")) return;
-
-                this.friendsList.appendChild(emptyBlock);
-            } else {
-                emptyBlock.remove();
-            }
-        });
-        const addToGroup = addToGroupMenu.querySelector(".addToGroupBtn") as HTMLButtonElement;
-
-
-        addToGroup.onclick = () => {
-            if (this.listUserToGroup.length > 0) {
-                this.listUserToGroup.forEach((login) => {
-                    const chat = new ChatService(this.selectChat$.getValue());
-                    chat.addUser(login);
-                });
-                this.listUserToGroup = [];
-                this.modal.close();
-            }
-        };
+            this.listUserToChat = [];
+            this.list.set([]);
+            this.modal.close();
+        }
     }
 
-    createElement() {
+    getComponent() {
         return this.openButton;
     }
 
-    getElement() {
-        return this.openButton;
-    }
-
-    setList(friends: Array<UserInfo>) {
-        this.friendsList.innerHTML = "";
-        friends.forEach((item) => {
-            this.pushList(item);
-        });
-        this.list$.next(friends);
-    }
-
-    pushList(friend: UserInfo) {
-        const friendBlock = createElementFromHTML(addToGroupItemT);
-        let chatName = friendBlock.querySelector(".chat_name") as HTMLElement;
-        let checkBox = friendBlock.querySelector("input");
-        const photo = friendBlock.querySelector(".chatPhoto") as HTMLImageElement;
-        photo.src = friend.photo;
-
-        checkBox.onchange = (event) => {
-            let element = event.target as HTMLInputElement;
-            if (element.checked) {
-                this.listUserToGroup.push(friend.email);
-            } else {
-                this.listUserToGroup.splice(this.listUserToGroup.indexOf(friend.email), 1);
-            }
-        };
-        chatName.textContent = friend.name;
-
-        let list = this.list$.getValue();
-        list.push(friend);
-        this.list$.next(list);
-        appendChild(this.friendsList, friendBlock);
+    unMounted() {
+        this.collector.clear();
+        this.openButton.remove();
+        this.addToChatMenu.remove();
     }
 }
