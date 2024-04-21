@@ -58,7 +58,7 @@ export class UserCheckBoxBlock implements iComponent {
         return this.userBlock;
     }
 
-    unMounted() {
+    destroy() {
         this.user.destroy()
         this.collector.clear();
         this.userBlock.remove();

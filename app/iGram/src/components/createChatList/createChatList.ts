@@ -110,7 +110,7 @@ export class CreateChatList implements iComponent {
         return this.openButton;
     }
 
-    unMounted() {
+    destroy() {
         this.createGroupMenu.remove();
         this.openButton.remove();
     }

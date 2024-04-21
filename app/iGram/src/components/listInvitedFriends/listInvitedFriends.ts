@@ -90,7 +90,7 @@ export class ListInvitedFriends implements iComponent {
         return this.openButton;
     }
 
-    unMounted() {
+    destroy() {
         this.collector.clear();
         this.friendsListBlock.remove();
         this.openButton.remove();

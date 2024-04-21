@@ -75,7 +75,7 @@ export class ChatSideBar implements iComponent {
         return this.sideBar;
     }
 
-    unMounted(){
+    destroy(){
         this.sideBar.remove()
     }
 }

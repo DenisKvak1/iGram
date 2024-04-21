@@ -66,7 +66,7 @@ export class ChatShortcutBlock implements iComponent {
         this.chat.getValue().destroy();
     }
 
-    unMounted(): void {
+    destroy(): void {
         this.clearListeners();
         this.chatBlock.remove();
     }

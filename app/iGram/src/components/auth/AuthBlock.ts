@@ -1,48 +1,66 @@
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { AuthBlockTemplate } from "./template";
-import { IAppController, iComponentOLD } from "../../../../../env/types";
+import { iComponent } from "../../../../../env/types";
 import { AuthFormFabric } from "./Fabric/fabricBlanks";
 import { authController } from "../../services/AuthController";
+import { Collector } from "../../../../../env/helpers/Collector";
 
-export class AuthBlock implements iComponentOLD {
-    controller: IAppController;
-    private AuthBlock: HTMLElement;
+export class AuthBlock implements iComponent {
+    private authBlock: HTMLElement;
+    private loginBlock: any;
+    private regBlock: any;
+    private collector = new Collector();
 
     constructor() {
         this.init();
     }
 
-    init() {
-        let authBlock = createElementFromHTML(AuthBlockTemplate);
-        let loginBlock: any = new AuthFormFabric("login");
-        let regBlock: any = new AuthFormFabric("register");
-
-        loginBlock.event$.subscribe((data: any) => {
-            authController.login({
-                email: data.credentials.email,
-                password: data.credentials.password
-            }, data.errorCallback);
-        });
-
-        regBlock.event$.subscribe((data: any) => {
-            authController.register({
-                email: data.payload.credentials.email,
-                password: data.payload.credentials.password
-            }, {
-                name: data.payload.credentials.name
-            }, data.errorCallback);
-        });
-
-        authBlock.appendChild(loginBlock.createAuthBlock());
-        authBlock.appendChild(regBlock.createAuthBlock());
-        this.AuthBlock = authBlock;
+    private init() {
+        this.initHTML();
+        this.setupEvents();
+        this.compositionComponent();
     }
 
-    createElement() {
-        return this.AuthBlock;
+    private initHTML() {
+        this.authBlock = createElementFromHTML(AuthBlockTemplate);
+        this.loginBlock = new AuthFormFabric("login");
+        this.regBlock = new AuthFormFabric("register");
     }
 
-    getElement() {
-        return this.AuthBlock;
+    private compositionComponent() {
+        this.authBlock.appendChild(this.loginBlock.createAuthBlock());
+        this.authBlock.appendChild(this.regBlock.createAuthBlock());
+    }
+
+    private setupEvents() {
+        this.collector.collect(
+            this.loginBlock.event$.subscribe((data: any) => this.loginBlockEventHandler(data)),
+            this.regBlock.event$.subscribe((data: any) => this.registerBlockEventHandler(data))
+        );
+    }
+
+    private registerBlockEventHandler(data: any) {
+        authController.register({
+            email: data.payload.credentials.email,
+            password: data.payload.credentials.password
+        }, {
+            name: data.payload.credentials.name
+        }, data.errorCallback);
+    }
+
+    private loginBlockEventHandler(data: any) {
+        authController.login({
+            email: data.credentials.email,
+            password: data.credentials.password
+        }, data.errorCallback);
+    }
+
+    getComponent() {
+        return this.authBlock;
+    }
+
+    destroy() {
+        this.collector.clear();
+        this.authBlock.remove();
     }
 }

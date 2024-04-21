@@ -8,17 +8,17 @@ export class AuthFormFabric {
             return new AuthForm({
                 buttonName: 'Войти',
                 inputs: [
-                    {placeHolder: "email", regExp:"^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"},
-                    {placeHolder: "password", regExp:"^[a-zA-Z0-9!@#$%^&*()_+{}\\[\\]:;<>,.?~\\\\-]+$"}
+                    {placeHolder: "Email", regExp:"^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", nameInCredential: "email"},
+                    {placeHolder: "Пароль", regExp:"^[a-zA-Z0-9!@#$%^&*()_+{}\\[\\]:;<>,.?~\\\\-]+$", nameInCredential: "password"}
                 ]
             })
         } else if(type === "register"){
             return new AuthForm({
                 buttonName: 'Зарегестрироватся',
                 inputs: [
-                    {placeHolder: "email", regExp:"^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"},
-                    {placeHolder: "password", regExp:"^[a-zA-Z0-9!@#$%^&*()_+{}\\[\\]:;<>,.?~\\\\-]+$"},
-                    {placeHolder: "name", regExp:"^[a-zA-Zа-яА-Я]+(?:-[a-zA-Zа-яА-Я]+)*$"}
+                    {placeHolder: "Email", regExp:"^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", nameInCredential: "email"},
+                    {placeHolder: "Пароль", regExp:"^[a-zA-Z0-9!@#$%^&*()_+{}\\[\\]:;<>,.?~\\\\-]+$", nameInCredential: "password"},
+                    {placeHolder: "Имя", regExp:"^[a-zA-Zа-яА-Я]+(?:-[a-zA-Zа-яА-Я]+)*$", nameInCredential: "name"}
                 ]
             })
         }

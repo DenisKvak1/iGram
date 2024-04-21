@@ -1,7 +1,7 @@
 import { iReactiveUserInfo, IUserService, serverWS_COMMANDS, UserInfo } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
-import { server } from "../modules/Server";
 import { ReactiveUserInfo } from "./ReactiveUserInfo";
+import { server } from "../modules/Server";
 
 export class UserService implements IUserService {
     setPhoto$ = new Observable<UserInfo>();

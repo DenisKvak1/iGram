@@ -64,8 +64,8 @@ export class MessageBlock implements iComponent {
         return this.messageBlock;
     }
 
-    unMounted() {
-        this.collector.clear()
+    destroy() {
+        this.collector.clear();
         this.messageBlock.remove();
     }
 }

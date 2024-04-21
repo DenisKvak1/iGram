@@ -4,7 +4,7 @@ import { chatInfoBlockT, chatTemplate, sendChatBlockT } from "./template";
 import "./style.css";
 import { Observable } from "../../../../../env/helpers/observable";
 import { AddUserToChat } from "../addUserToGroup/addUserToChat";
-import { chatManager, selectChatService } from "../../services/ChatService";
+import { chatManager, currentChatService } from "../../services/ChatService";
 import { MessageBlock } from "../messageBlock/messageBlock";
 import { registerReactivityList } from "../../../../../env/reactivity2.0/registerReactivityList";
 import { conditionalRendering } from "../../../../../env/reactivity2.0/conditionalRendering";
@@ -35,7 +35,7 @@ export class ChatBlock implements iComponent {
     private init() {
         this.initHTML();
         this.setupContentHTML();
-        this.setupEmptyChat();
+        this.registerChatParts();
         this.setupPhotoLoaderHandle();
         this.setupLeaveGroupHandle();
         this.setupSelectChatHandle();
@@ -49,26 +49,27 @@ export class ChatBlock implements iComponent {
         this.toSendBlock = createElementFromHTML(sendChatBlockT);
         this.toChatInfoBlock = createElementFromHTML(chatInfoBlockT);
         this.leaveGroupBTN = this.toChatInfoBlock.querySelector(".leaveGroup") as HTMLButtonElement;
+        this.chatNameElement = this.toChatInfoBlock.querySelector(".chat_name") as HTMLElement;
+
         const addToGroup = new AddUserToChat();
         this.leaveGroupBTN.insertAdjacentElement("beforebegin", addToGroup.getComponent());
         this.messagesBlock = this.chatBlock.querySelector(".mainMessageBlock");
     }
 
-    private setupEmptyChat() {
+    private registerChatParts() {
         this.collector.collect(
             conditionalRendering(chatManager.selectChat$, () => Boolean(chatManager.selectChat$.getValue()), this.toChatInfoBlock, this.chatBlock),
             conditionalRendering(chatManager.selectChat$, () => Boolean(chatManager.selectChat$.getValue()), this.messagesBlock, this.chatBlock),
             conditionalRendering(chatManager.selectChat$, () => Boolean(chatManager.selectChat$.getValue()), this.toSendBlock, this.chatBlock)
         );
-        this.messagesBlock = this.chatBlock.querySelector(".mainMessageBlock");
     }
 
     private setupContentHTML() {
-        selectChatService.chat$.onceOr(Boolean(selectChatService.chat$.getValue()), () => {
-            this.setupEventMessageAndName(selectChatService.chat$.getValue());
+        currentChatService.chat$.onceOr(Boolean(currentChatService.chat$.getValue()), () => {
+            this.setupEventMessageAndName(currentChatService.chat$.getValue());
         });
         this.collector.collect(
-            selectChatService.chat$.subscribe((chat) => {
+            currentChatService.chat$.subscribe((chat) => {
                 this.setupEventMessageAndName(chat);
             })
         );
@@ -84,12 +85,12 @@ export class ChatBlock implements iComponent {
 
     private setupPhotoLoaderHandle() {
         const uploadPhotoInput = this.toChatInfoBlock.querySelector(".filePhotoLoad") as HTMLInputElement;
-        setupLoadPhotoEvent(uploadPhotoInput, (bufferedPhoto) => selectChatService.setPhoto(bufferedPhoto));
+        setupLoadPhotoEvent(uploadPhotoInput, (bufferedPhoto) => currentChatService.setPhoto(bufferedPhoto));
     }
 
     private setupLeaveGroupHandle() {
         this.leaveGroupBTN.onclick = () => {
-            selectChatService.leaveChat();
+            currentChatService.leaveChat();
             if (window.innerWidth < 1200) {
                 this.toChatList$.next();
             }
@@ -98,7 +99,6 @@ export class ChatBlock implements iComponent {
 
     private setupSelectChatHandle() {
         chatManager.selectChat$.once(() => {
-            this.chatNameElement = this.chatBlock.querySelector(".chat_name") as HTMLElement;
             this.chatNameElement.onclick = () => {
                 this.toMemberList$.next();
             };
@@ -116,7 +116,7 @@ export class ChatBlock implements iComponent {
     private sendMessageFromInput() {
         const inputMessage = this.toSendBlock.querySelector(".sendBlock input") as HTMLInputElement;
         if (!inputMessage.value) return;
-        selectChatService.pushMessage({
+        currentChatService.pushMessage({
             from: localStorage.getItem("email"),
             to: chatManager.selectChat$.getValue(),
             text: inputMessage.value
@@ -150,7 +150,7 @@ export class ChatBlock implements iComponent {
         return this.chatBlock;
     }
 
-    unMounted(): void {
+    destroy(): void {
         this.tempCollector.clear();
         this.collector.clear();
         this.chatBlock.remove();

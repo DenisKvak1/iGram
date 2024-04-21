@@ -30,6 +30,7 @@ export type iServer = {
 }
 
 export const enum serverWS_COMMANDS {
+    LOGIN = "login",
     ADD_FRIEND = "addFriend",
     FRIEND_REQUEST = "friendRequest",
     FRIEND_RESPONSE = "friendResponse",
@@ -68,13 +69,10 @@ export type componentsEvent = {
         email: string
     }>
 }
-export type iComponentOLD = {
-    createElement: () => HTMLElement
-    getElement: () => HTMLElement
-}
+
 export type iComponent = {
     getComponent: () => HTMLElement
-    unMounted: () => void
+    destroy: () => void
 }
 
 export const enum componentsID {
@@ -137,12 +135,12 @@ export type fromChat = {
 };
 export type ChatUserInfo = {
     chatID: string;
-    user: UserInfo;
+    user: iReactiveUserInfo;
 };
 export type iReactiveChatInfo = {
     id: string;
     chatName: iObservable<string>;
-    members: listObserver<UserInfo>;
+    members: listObserver<iReactiveUserInfo>;
     history: listObserver<iReactiveMessage>
     photo: iObservable<string>;
     destroy: () => void
@@ -172,7 +170,7 @@ export type iChat = {
 
 export type serverMessage = {
     command: serverWS_COMMANDS
-    payload: {
+    payload?: {
         from?: UserInfo | string
         to?: string
         text?: string
@@ -236,10 +234,10 @@ export type IChatService = {
     leaveChat: () => void
 }
 export type IChatManager = {
-    leaveChat$: iObservable<{ chatID: string, user: UserInfo }>;
+    leaveChat$: iObservable<ChatUserInfo>;
     message$: iObservable<message>;
     chatCreated$: iObservable<fromChat>;
-    addMember$: iObservable<{ chatID: string, user: UserInfo }>
+    addMember$: iObservable<ChatUserInfo>
     createChat: (login: Array<string>, chatName: string) => void
     getChats: () => Promise<Array<iChat>>
     getReactiveChats: () => Promise<Array<iReactiveChatInfo>>
@@ -254,6 +252,7 @@ export type authBlockOptions = {
     inputs: Array<authBlockInput>
 }
 export type authBlockInput = {
+    nameInCredential: string,
     placeHolder: string,
     regExp?: string
 }

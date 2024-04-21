@@ -1,134 +1,86 @@
-import { iComponentOLD, iObservable, iSubscribe, UserInfo } from "../../../../../env/types";
+import { ChatUserInfo, iComponent, iObservable, iReactiveUserInfo } from "../../../../../env/types";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
-import { appendChild } from "../../../../../env/helpers/appendRemoveChildDOMElements";
-import { containerMembersList, memberElement } from "./template";
+import { containerMembersList } from "./template";
 import "./style.css";
 import { Observable } from "../../../../../env/helpers/observable";
-import { formatDateString } from "../../../../../env/helpers/formatTime";
-import { userService } from "../../services/UserService";
 import { chatManager } from "../../services/ChatService";
+import { listObserver } from "../../../../../env/reactivity2.0/types";
+import { ReactiveList } from "../../../../../env/reactivity2.0/reactivityList";
+import { registerReactivityList } from "../../../../../env/reactivity2.0/registerReactivityList";
+import { ChatMemberBlock } from "../chatMemberBlock/chatMemberBlock";
+import { Collector } from "../../../../../env/helpers/Collector";
 
-export class ChatMembersList implements iComponentOLD {
-    containerMembersList: HTMLElement;
-    membersListBlock: HTMLElement;
+export class ChatMembersList implements iComponent {
+    private containerMembersList: HTMLElement;
+    private membersListBlock: HTMLElement;
+    private backArrow: HTMLElement;
+    private list: listObserver<iReactiveUserInfo>;
+    private collector = new Collector();
     toChat$: iObservable<null>;
-    private list$: iObservable<Array<UserInfo>>;
-    private timeUpdater: Array<NodeJS.Timeout>;
-    eventSList: Array<iSubscribe>;
 
     constructor() {
-        this.list$ = new Observable<Array<UserInfo>>([]);
+        this.list = new ReactiveList([]);
         this.toChat$ = new Observable();
-        this.timeUpdater = [];
-        this.eventSList = [];
 
         this.init();
     }
 
-    init() {
+    private init() {
+        this.initHTML();
+        this.setupHTMLContent();
+        this.setupEvents();
+    }
+
+    private initHTML() {
         this.containerMembersList = createElementFromHTML(containerMembersList);
-    }
-
-    createElement() {
         this.membersListBlock = this.containerMembersList.querySelector(".membersListBlock");
-        const backArrow = this.containerMembersList.querySelector(".toChat") as HTMLButtonElement;
-        backArrow.onclick = () => {
-            this.toChat$.next();
-        };
-        this.containerMembersList.classList.add("noneVisible");
-        chatManager.selectChat$.subscribe((data) => {
-            if (window.innerWidth >= 1200) {
-                if (!data) {
-                    this.containerMembersList.classList.add("noneVisible");
-                } else {
-                    this.containerMembersList.classList.remove("noneVisible");
-                }
-            }
+        this.backArrow = this.containerMembersList.querySelector(".toChat") as HTMLButtonElement;
+    }
+
+    private setupEvents() {
+        this.backArrow.onclick = () => this.clickBackArrowHandler();
+        this.collector.collect(
+            chatManager.addMember$.subscribe((data) => this.addMemberHandler(data)),
+            chatManager.leaveChat$.subscribe((data) => this.leaveChatHandler(data)),
+            chatManager.selectChat$.subscribe((chatID) => this.selectChatHandler(chatID))
+        );
+    }
+
+    private setupHTMLContent() {
+        this.collector.collect(
+            registerReactivityList(ChatMemberBlock, this.membersListBlock, this.list)
+        );
+    }
+
+    private addMemberHandler(data: ChatUserInfo) {
+        this.list.push(data.user);
+    }
+
+    private leaveChatHandler(data: ChatUserInfo) {
+        let list = this.list.getValue();
+        list = list.filter((item) => item.getValue().email.getValue() !== data.user.email.getValue());
+        const formatList = list.map((item) => item.getValue());
+        this.list.set(formatList);
+    }
+
+    private selectChatHandler(chatID: string) {
+        chatManager.getReactiveChat(chatID).then((chat) => {
+            if (!chat) return;
+            const formatMembers = chat.members.getValue().map((item) => item.getValue());
+            this.list.set(formatMembers);
         });
-        chatManager.selectChat$.subscribe((chatID) => {
-            chatManager.getChat(chatID).then((chat) => {
-                if (!chat) return;
-                this.setList(chat.members);
-            });
-        });
-        chatManager.leaveChat$.subscribe((data) => {
-            let list = this.list$.getValue();
-            list = list.filter((item) => item.email !== data.user.email);
-            this.setList(list);
-        });
-        chatManager.addMember$.subscribe((data) => {
-            this.pushList(data.user);
-        });
+    }
+
+    private clickBackArrowHandler() {
+        this.toChat$.next();
+    }
+
+    getComponent() {
         return this.containerMembersList;
     }
 
-    getElement() {
-        return this.containerMembersList;
-    }
-
-    setList(members: Array<UserInfo>) {
-        this.membersListBlock.innerHTML = "";
-        this.timeUpdater.forEach((item) => clearInterval(item));
-        this.timeUpdater = [];
-        this.eventSList.forEach((item) => item.unsubscribe());
-        this.eventSList = [];
-
-        members.forEach((item) => {
-            this.pushList(item);
-        });
-        this.list$.next(members);
-    }
-
-    pushList(member: UserInfo) {
-        const chatBlock = createElementFromHTML(memberElement);
-        const memberName = chatBlock.querySelector(".chat_name");
-        const memberPhoto = chatBlock.querySelector(".memberPhotoInList") as HTMLImageElement;
-        const memberActivity = chatBlock.querySelector(".last_online");
-        const last_onlineSign = chatBlock.querySelector(".last_onlineSign");
-
-        let activityFormatDate = formatDateString(member.lastActivity);
-        if (activityFormatDate === "В сети") last_onlineSign.textContent = "";
-
-        memberName.textContent = member.name;
-        memberPhoto.src = member.photo;
-        memberActivity.textContent = activityFormatDate;
-
-        if (member.email !== localStorage.getItem("email")) {
-            const intervalId = setInterval(() => {
-                let activityFormatDate = formatDateString(member.lastActivity);
-                if (activityFormatDate !== "В сети") {
-                    last_onlineSign.innerHTML = "Был(а)&nbsp;";
-                } else {
-                    last_onlineSign.textContent = "";
-                }
-                memberActivity.textContent = activityFormatDate;
-            }, 1000 * 60);
-            this.timeUpdater.push(intervalId);
-        }
-
-        const setActivitySUBC = userService.activity$.subscribe((userInfo) => {
-            if (userInfo.email !== member.email) return;
-            member.lastActivity = userInfo.lastActivity;
-
-            let activityFormatDate = formatDateString(userInfo.lastActivity);
-            memberActivity.textContent = activityFormatDate;
-            if (activityFormatDate !== "В сети") {
-                last_onlineSign.innerHTML = "Был(а)&nbsp;";
-            } else {
-                last_onlineSign.textContent = "";
-            }
-        });
-        const setPhotoSUBC = userService.setPhoto$.subscribe((userInfo) => {
-            if (userInfo.email !== member.email) return;
-            const timestamp = new Date().getTime();
-            memberPhoto.src = `${userInfo.photo}?timestamp=${timestamp}`;
-        });
-        this.eventSList.push(setActivitySUBC);
-        this.eventSList.push(setPhotoSUBC);
-
-        let list = this.list$.getValue();
-        list.push(member);
-        this.list$.next(list);
-        appendChild(this.membersListBlock, chatBlock);
+    destroy() {
+        this.collector.clear();
+        this.containerMembersList.remove();
     }
 }

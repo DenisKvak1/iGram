@@ -11,13 +11,14 @@ import {
     serverWS_COMMANDS,
     UserInfo
 } from "../../../../env/types";
-import { server } from "../modules/Server";
 import { chatsCache } from "../modules/Cash/ChatsCash/ChatsCache";
 import { Observable } from "../../../../env/helpers/observable";
 import { ReactiveChatData } from "./ReactivityChatInfo";
 import { computed } from "../../../../env/reactivity2.0/computed";
+import { ReactiveUserInfo } from "./ReactiveUserInfo";
+import { server } from "../modules/Server";
 
-export class SelectChatService implements IChatService {
+export class CurrentChatService implements IChatService {
     load$ = new Observable<boolean>(false);
     chat$ = new Observable<iReactiveChatInfo>();
     pushMessage$: iObservable<message>;
@@ -25,6 +26,7 @@ export class SelectChatService implements IChatService {
     addMember$: iObservable<UserInfo>;
 
     constructor() {
+
         this.init();
     }
 
@@ -199,8 +201,11 @@ export class ChatManager implements IChatManager {
     private setupLeaveChatEvent(): void {
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.LEAVE_CHAT) return;
-
-            this.leaveChat$.next(msg.payload as ChatUserInfo);
+            const message = {
+                chatID: msg.payload.chatID,
+                user: new ReactiveUserInfo(msg.payload.user)
+            };
+            this.leaveChat$.next(message);
         });
     }
 
@@ -215,8 +220,11 @@ export class ChatManager implements IChatManager {
     private setupAddMemberEvent(): void {
         server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.FRIEND_ADD_TO_CHAT) return;
-
-            this.addMember$.next(msg.payload as ChatUserInfo);
+            const message = {
+                chatID: msg.payload.chatID,
+                user: new ReactiveUserInfo(msg.payload.user)
+            };
+            this.addMember$.next(message);
         });
     }
 
@@ -230,7 +238,4 @@ export class ChatManager implements IChatManager {
 }
 
 export const chatManager = new ChatManager();
-export const selectChatService = new SelectChatService();
-
-(window as any).chatManager = chatManager;
-(window as any).selectChatServer = selectChatService;
+export const currentChatService = new CurrentChatService();

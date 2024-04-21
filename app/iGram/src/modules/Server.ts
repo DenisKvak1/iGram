@@ -1,29 +1,30 @@
 import {
+    credentials,
     iObservable,
     iServer,
-    credentials,
-    serverMessage,
     registerOptions,
-    serverResponse
+    serverMessage,
+    serverResponse,
+    serverWS_COMMANDS
 } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
-import { authController } from "../services/AuthController";
+
 export class Server implements iServer {
     url: string;
     urlWebSocket: string;
     webSocket: WebSocket;
     event$: iObservable<serverMessage>;
-    ready$: iObservable<boolean>
+    ready$: iObservable<boolean>;
 
     constructor(url: string, urlWebSocket: string) {
         this.url = url;
         this.urlWebSocket = urlWebSocket;
-        this.ready$ = new Observable<boolean>()
+        this.ready$ = new Observable<boolean>();
 
         this.webSocket = new WebSocket(`${urlWebSocket}?token=${localStorage.getItem("jwt")}`);
-        this.webSocket.onopen = ()=> this.ready$.next(true)
+        this.webSocket.onopen = () => this.ready$.next(true);
         this.webSocket.onclose = (event) => setTimeout(() => {
-            this.ready$.next(false)
+            this.ready$.next(false);
             if (!event.wasClean) {
                 this.wsReconnect();
             }
@@ -85,7 +86,9 @@ export class Server implements iServer {
         if (request.status === "OK") {
             localStorage.setItem("jwt", request.jwt);
             localStorage.setItem("email", request.email);
-            authController.isAuth$.next(true)
+            this.event$.next({
+                command: serverWS_COMMANDS.LOGIN
+            });
         }
 
         this.wsReconnect();
@@ -97,7 +100,9 @@ export class Server implements iServer {
         if (request.status === "OK") {
             localStorage.setItem("jwt", request.jwt);
             localStorage.setItem("email", request.email);
-            authController.isAuth$.next(true)
+            this.event$.next({
+                command: serverWS_COMMANDS.LOGIN
+            });
         }
 
         this.wsReconnect();
@@ -109,11 +114,13 @@ export class Server implements iServer {
         request = await this.sendRequest("api/chats", {}, "GET");
         return request;
     }
-    async getChat(id:string){
+
+    async getChat(id: string) {
         let request: serverResponse;
         request = await this.sendRequest(`api/chats/${id}`, {}, "GET");
         return request;
     }
+
     async getFriendsInvites(): Promise<serverResponse> {
         return await this.sendRequest("api/getFriendsInvite", {}, "GET");
     }
@@ -130,13 +137,14 @@ export class Server implements iServer {
         this.webSocket.close();
         this.webSocket = new WebSocket(`${this.urlWebSocket}?token=${localStorage.getItem("jwt")}`);
         this.receiveMessage();
-        this.webSocket.onopen = ()=> this.ready$.next(true)
+        this.webSocket.onopen = () => this.ready$.next(true);
         this.webSocket.onclose = (event) => setTimeout(() => {
-            this.webSocket.onopen = ()=> this.ready$.next(false)
+            this.webSocket.onopen = () => this.ready$.next(false);
             if (!event.wasClean) {
                 this.wsReconnect();
             }
         }, 3000);
     }
 }
+
 export const server = new Server("http://127.0.0.1:3000", "ws:///127.0.0.1:3000");

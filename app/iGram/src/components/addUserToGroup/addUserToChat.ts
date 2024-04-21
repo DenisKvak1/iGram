@@ -2,7 +2,6 @@ import { iComponent, iModal, iReactiveUserInfo } from "../../../../../env/types"
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { Modal } from "../modal/Modal";
 import { addToChatMenuT, friendsEmptyCGT, openButtonAddToChat } from "./template";
-import { selectChatService } from "../../services/ChatService";
 import { userService } from "../../services/UserService";
 import { listObserver } from "../../../../../env/reactivity2.0/types";
 import { ReactiveList } from "../../../../../env/reactivity2.0/reactivityList";
@@ -10,6 +9,7 @@ import { registerReactivityList } from "../../../../../env/reactivity2.0/registe
 import { UserCheckBoxBlock } from "../userCheckBoxBlock/userCheckBoxBlock";
 import { Collector } from "../../../../../env/helpers/Collector";
 import { conditionalRendering } from "../../../../../env/reactivity2.0/conditionalRendering";
+import { currentChatService } from "../../services/ChatService";
 
 export class AddUserToChat implements iComponent {
     private modal: iModal;
@@ -33,7 +33,6 @@ export class AddUserToChat implements iComponent {
         this.initHTML();
         this.initHTMLContent();
         this.initModal();
-        this.getFriendListHandler();
         this.setupEvents();
     }
 
@@ -67,8 +66,8 @@ export class AddUserToChat implements iComponent {
 
     private getFriendListHandler() {
         userService.getReactiveFriendsList((users) => {
-            const members = selectChatService.chat$.getValue().members.getValue();
-            users = users.filter((item) => !members.some((element) => element.getValue().email === item.email.getValue()));
+            const members = currentChatService.chat$.getValue().members.getValue();
+            users = users.filter((item) => !members.some((element) => element.getValue().email.getValue() === item.email.getValue()));
 
             this.list.set(users);
         });
@@ -76,8 +75,8 @@ export class AddUserToChat implements iComponent {
     }
 
     private pushFriendHandler(user: iReactiveUserInfo) {
-        const chatMember = selectChatService.chat$.getValue().members.getValue();
-        if (chatMember.some((member) => member.getValue().email === user.email.getValue())) return;
+        const chatMember = currentChatService.chat$.getValue().members.getValue();
+        if (chatMember.some((member) => member.getValue().email.getValue() === user.email.getValue())) return;
 
         this.list.push(user);
     }
@@ -94,11 +93,11 @@ export class AddUserToChat implements iComponent {
             })
         );
     }
-    
+
     private addUserHandler() {
         if (this.listUserToChat.length > 0) {
             this.listUserToChat.forEach((login) => {
-                selectChatService.addUser(login);
+                currentChatService.addUser(login);
             });
             this.listUserToChat = [];
             this.list.set([]);
@@ -110,7 +109,7 @@ export class AddUserToChat implements iComponent {
         return this.openButton;
     }
 
-    unMounted() {
+    destroy() {
         this.collector.clear();
         this.openButton.remove();
         this.addToChatMenu.remove();

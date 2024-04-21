@@ -1,16 +1,24 @@
-import { iChat, iObservable, iReactiveChatInfo, iReactiveMessage, UserInfo } from "../../../../env/types";
+import {
+    iChat,
+    iObservable,
+    iReactiveChatInfo,
+    iReactiveMessage,
+    iReactiveUserInfo
+} from "../../../../env/types";
 import { chatManager } from "./ChatService";
 import { Observable } from "../../../../env/helpers/observable";
 import { listObserver } from "../../../../env/reactivity2.0/types";
 import { ReactiveList } from "../../../../env/reactivity2.0/reactivityList";
 import { Collector } from "../../../../env/helpers/Collector";
 import { ReactiveMessage } from "./ReactiveMessage";
+import { ReactiveUserInfo } from "./ReactiveUserInfo";
 
 export class ReactiveChatData implements iReactiveChatInfo {
     private collector = new Collector();
+    private reactiveObjectToRemove: Array<iReactiveUserInfo | iReactiveMessage> = [];
     id: string;
     chatName: iObservable<string>;
-    members: listObserver<UserInfo>;
+    members: listObserver<iReactiveUserInfo>;
     history: listObserver<iReactiveMessage>;
     photo: iObservable<string>;
 
@@ -26,9 +34,18 @@ export class ReactiveChatData implements iReactiveChatInfo {
     private initObserver(chat: iChat) {
         this.id = chat.id;
         this.chatName = new Observable(chat.chatName);
-        this.members = new ReactiveList(chat.members);
+        const reactiveMembers = chat.members.map((user) => {
+            const reactiveUser = new ReactiveUserInfo(user);
+            this.reactiveObjectToRemove.push(reactiveUser);
+            return reactiveUser;
+        });
+        this.members = new ReactiveList(reactiveMembers);
         this.photo = new Observable(chat.photo);
-        this.history = new ReactiveList(chat.history.map((msg) => new ReactiveMessage(msg)));
+        this.history = new ReactiveList(chat.history.map((msg) => {
+            const reactiveMsg = new ReactiveMessage(msg);
+            this.reactiveObjectToRemove.push(reactiveMsg);
+            return reactiveMsg;
+        }));
     }
 
     private initEventChanges() {
@@ -55,6 +72,7 @@ export class ReactiveChatData implements iReactiveChatInfo {
                 if (msg.to !== this.id) return;
 
                 const reactiveMsg = new ReactiveMessage(msg);
+                this.reactiveObjectToRemove.push(reactiveMsg);
                 this.history.push(reactiveMsg);
             })
         );
@@ -63,6 +81,7 @@ export class ReactiveChatData implements iReactiveChatInfo {
     private setupAddMembersEvent() {
         this.collector.collect(
             chatManager.addMember$.subscribe((data) => {
+                this.reactiveObjectToRemove.push(data.user);
                 this.members.push(data.user);
             })
         );
@@ -71,13 +90,14 @@ export class ReactiveChatData implements iReactiveChatInfo {
     private setupRemoveMembersEvent() {
         this.collector.collect(
             chatManager.leaveChat$.subscribe((data) => {
-                const index = this.members.getValue().findIndex((user) => user.getValue().email === data.user.email);
+                const index = this.members.getValue().findIndex((user) => user.getValue().email.getValue() === data.user.email.getValue());
                 this.members.delete(index);
             })
         );
     }
 
     destroy() {
+        this.reactiveObjectToRemove.forEach((obj) => obj.destroy());
         this.collector.clear();
     }
 }

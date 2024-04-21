@@ -1,7 +1,7 @@
 import { IAppController } from "../../../env/types";
 import { MainPage } from "./pages/main/main";
-import { server } from "./modules/Server";
 import { authController } from "./services/AuthController";
+import { server } from "./modules/Server";
 
 
 export class AppController implements IAppController {
@@ -10,7 +10,6 @@ export class AppController implements IAppController {
 
     private constructor() {
         this.root = document.getElementById("app");
-
         authController.isAuth$.once(() => {
             this.init();
         });
@@ -25,8 +24,8 @@ export class AppController implements IAppController {
 
     private init() {
         server.ready$.onceOr(server.ready$.getValue(), () => {
-            const mainPage = new MainPage(authController.isAuth$);
-            this.root.appendChild(mainPage.createPageElement());
+            const mainPage = new MainPage();
+            this.root.appendChild(mainPage.getComponent());
         });
     }
 }

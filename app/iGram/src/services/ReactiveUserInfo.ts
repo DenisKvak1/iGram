@@ -29,12 +29,18 @@ export class ReactiveUserInfo implements iReactiveUserInfo {
     }
 
     private initEventChanges() {
-        this.setupFriendsChangeEvent();
+        this.setupActiveChangeEvent();
         this.setupPhotoChangeEvent();
     }
 
-    private setupFriendsChangeEvent() {
+    private setupActiveChangeEvent() {
+        this.collector.collect(
+            userService.activity$.subscribe((user) => {
+                if (user.email !== this.email.getValue()) return;
 
+                this.lastActivity.next(user.lastActivity);
+            })
+        );
     }
 
     private setupPhotoChangeEvent() {

@@ -1,11 +1,13 @@
-import { server } from "../modules/Server";
 import {
     credentials,
     IAuthController,
     iObservable,
-    registerOptions, serverResponse
+    registerOptions,
+    serverResponse,
+    serverWS_COMMANDS
 } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
+import { server } from "../modules/Server";
 
 export class AuthController implements IAuthController {
     isAuth$: iObservable<boolean>;
@@ -13,9 +15,16 @@ export class AuthController implements IAuthController {
     constructor() {
         this.isAuth$ = new Observable<boolean>();
 
-        this.checkAuth()
+        this.init()
+        this.checkAuth();
     }
+    private init(){
+        server.event$.subscribe((msg)=>{
+            if(msg.command !== serverWS_COMMANDS.LOGIN) return
 
+            this.isAuth$.next(true)
+        })
+    }
     login(credentials: credentials, errorCallback: Function): void {
         server.login(credentials).then((resp: any) => {
             if (resp.status === "OK") return;
@@ -42,4 +51,4 @@ export class AuthController implements IAuthController {
     }
 }
 
-export const authController = new AuthController();
+export const authController = new AuthController()

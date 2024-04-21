@@ -18,9 +18,9 @@ export class AuthForm implements IAuthForm {
     }
 
     createAuthBlock() {
-        let form = createElementFromHTML(authForm);
-        let btn = form.querySelector(".submitAuth") as HTMLButtonElement;
-        let authError = form.querySelector(".authError");
+        const form = createElementFromHTML(authForm);
+        const btn = form.querySelector(".submitAuth") as HTMLButtonElement;
+        const authError = form.querySelector(".authError");
         btn.textContent = this.options.buttonName;
         this.options.inputs.forEach((item) => {
             let input = createElement("input") as HTMLInputElement;
@@ -48,12 +48,12 @@ export class AuthForm implements IAuthForm {
 
             let objectValues: any = {};
             this.options.inputs.forEach((item, index) => {
-                objectValues[item.placeHolder] = values[index];
+                objectValues[item.nameInCredential] = values[index];
             });
             this.event$.next({
                 credentials: { ...objectValues },
                 errorCallback: (error: string) => {
-                    authError.textContent = error
+                    authError.textContent = error;
                 }
             });
             this.inputs.map((item) => item.value = "");

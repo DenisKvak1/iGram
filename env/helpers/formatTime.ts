@@ -6,11 +6,12 @@ export function formatDateString(dateString: string): string {
     const diffMinutes = Math.floor(diffMilliseconds / (1000 * 60));
     const diffHours = Math.floor(diffMilliseconds / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMilliseconds / (1000 * 60 * 60 * 24));
+
     if (diffMinutes === 0) {
         return "В сети";
     } else if (diffDays === 0 && diffHours < 1 && diffMinutes > 0) {
         return `${diffMinutes} минут назад`;
-    } else if (diffHours < 12 && diffDays === 0 && diffHours <= 1) {
+    } else if (diffHours < 12 && diffDays === 0 && diffHours >= 1) {
         return `${diffHours} часов назад`;
     } else if (diffDays === 0 && diffHours >= 12) {
         const hours = date.getHours().toString().padStart(2, "0");
@@ -32,13 +33,13 @@ export function formatDateStringToMessage(dateString: string): string {
 
     const diffMilliseconds = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMilliseconds / (1000 * 60 * 60 * 24));
-    const diffYears = now.getFullYear() - date.getFullYear()
+    const diffYears = now.getFullYear() - date.getFullYear();
 
-    if (diffDays===0) {
+    if (diffDays === 0) {
         const hours = date.getHours().toString().padStart(2, "0");
         const minutes = date.getMinutes().toString().padStart(2, "0");
         return `${hours}:${minutes}`;
-    } else if (diffYears===0) {
+    } else if (diffYears === 0) {
         const hours = date.getHours().toString().padStart(2, "0");
         const minutes = date.getMinutes().toString().padStart(2, "0");
         const day = date.getDate().toString().padStart(2, "0");
@@ -53,7 +54,7 @@ export function formatDateStringToMessage(dateString: string): string {
     }
 }
 
-function getMonthName(month:number) {
+function getMonthName(month: number) {
     switch (month) {
         case 0:
             return "января";

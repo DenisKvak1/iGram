@@ -16,7 +16,7 @@ export function registerReactivityList<T>(Component: any, container: HTMLElement
 
     function render(list: iObservable<T>[]) {
         elements.forEach((element: any) => {
-            element.unMounted();
+            element.destroy();
         });
         list.forEach((item) => {
             const element = createElement(item);
@@ -38,7 +38,7 @@ export function registerReactivityList<T>(Component: any, container: HTMLElement
             const element = component.getComponent();
             container.children[variable.payload.index].insertAdjacentElement("beforebegin", element);
         } else if (variable.command === LIST_COMMAND.DELETE) {
-            elements[variable.payload.index].unMounted();
+            elements[variable.payload.index].destroy();
             elements.splice(variable.payload.index, 1);
         }
     });
@@ -46,7 +46,7 @@ export function registerReactivityList<T>(Component: any, container: HTMLElement
         unsubscribe: () => {
             subsc.unsubscribe();
             elements.forEach((element: any) => {
-                element.unMounted();
+                element.destroy();
             });
         }
     };

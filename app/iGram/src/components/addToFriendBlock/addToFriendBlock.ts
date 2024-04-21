@@ -6,7 +6,7 @@ import "./style.css";
 import { userService } from "../../services/UserService";
 
 export class AddToFriendBlock implements iComponent {
-    addFriendBlock: HTMLElement;
+    private addFriendBlock: HTMLElement;
     addFriend$ = new Observable<string>();
     private friendInput: HTMLInputElement;
     private addButton: HTMLButtonElement;
@@ -30,7 +30,7 @@ export class AddToFriendBlock implements iComponent {
         return this.addFriendBlock;
     }
 
-    unMounted() {
+    destroy() {
         this.addFriendBlock.remove();
     }
 

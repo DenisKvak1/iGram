@@ -64,7 +64,7 @@ export class ChatShortcutList implements iComponent {
     private leaveChatHandler(data: ChatUserInfo) {
         const selectChat = chatManager.selectChat$.getValue();
         const emailFromLocalStorage = localStorage.getItem("email");
-        if (selectChat !== data.chatID || emailFromLocalStorage !== data.user.email) return;
+        if (selectChat !== data.chatID || emailFromLocalStorage !== data.user.email.getValue()) return;
 
         const index = this.list.getValue().findIndex(item => item.getValue().id === data.chatID);
         this.list.delete(index);
@@ -73,7 +73,7 @@ export class ChatShortcutList implements iComponent {
 
     private addMemberHandler(data: ChatUserInfo) {
         const emailFromLocalStorage = localStorage.getItem("email");
-        if (emailFromLocalStorage !== data.user.email) return;
+        if (emailFromLocalStorage !== data.user.email.getValue()) return;
 
         chatManager.getReactiveChat(data.chatID).then((chat) => {
             this.list.push(chat);
@@ -84,7 +84,7 @@ export class ChatShortcutList implements iComponent {
         return this.chatListContainer;
     }
 
-    unMounted() {
+    destroy() {
         this.collector.clear();
         this.chatListContainer.remove();
     }

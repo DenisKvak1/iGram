@@ -67,7 +67,7 @@ export class FriendInviteBlock implements iComponent {
     }
 
 
-    unMounted() {
+    destroy() {
         this.user.destroy();
         this.collector.clear();
         this.friendBlock.remove();

@@ -1,9 +1,9 @@
-import { iObservable } from "../types";
+import { iObservable, iSubscribe } from "../types";
 import { Observable } from "../helpers/observable";
 import { listObserver } from "./types";
 import { Collector } from "../helpers/Collector";
 
-export function computed<T>(depends: iObservable<T> | iObservable<T>[] | listObserver<T> | listObserver<T>[], expression: () => any) {
+export function computed<T>(depends: iObservable<T> | iObservable<T>[] | listObserver<T> | listObserver<T>[], expression: () => any): {observer: iObservable<any>, subscribe: iSubscribe} {
     const computedObsc = new Observable(expression());
     const collector = new Collector();
 
