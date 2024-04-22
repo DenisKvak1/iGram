@@ -29,7 +29,7 @@ export const messageFromT = `
 `
 export const sendChatBlockT =   `
     <div class="sendBlock">
-        <input type="text">
+        <div contenteditable="true" class="messageInput"></div>
         <button>Отправить</button>
     </div>
 `

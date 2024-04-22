@@ -3,9 +3,11 @@ import { createElementFromHTML } from "../../../../../env/helpers/createElementF
 import { messageFromT, messageMeT } from "../chatBlock/template";
 
 import { formatDateStringToMessage } from "../../../../../env/helpers/formatTime";
-import { reactivity } from "../../../../../env/reactivity2.0/reactivity";
+import { reactivity, reactivityHTML } from "../../../../../env/reactivity2.0/reactivity";
 import { reactivityAttribute } from "../../../../../env/reactivity2.0/reactivityAttribute";
 import { Collector } from "../../../../../env/helpers/Collector";
+import { computed } from "../../../../../env/reactivity2.0/computed";
+import { emojiParser } from "../../modules/EmojiParser";
 
 export class MessageBlock implements iComponent {
     private message: iObservable<iReactiveMessage>;
@@ -44,12 +46,13 @@ export class MessageBlock implements iComponent {
         const { text, from } = messageValue;
         const { photo, name } = from;
 
+        const messageTextComputed = computed(text, ()=> emojiParser.parseToEmoji(text.getValue()))
         this.collector.collect(
-            reactivity(text, this.messageText),
-            reactivity(name, this.nameBlock)
+            reactivityHTML(messageTextComputed.observer, this.messageText),
+            reactivity(name, this.nameBlock),
+            messageTextComputed.subscribe
         );
         if (!this.checkMeMessage()) this.collector.collect(reactivityAttribute(photo, this.photo, "src"));
-
         this.messageDate.textContent = formatDateStringToMessage(this.message.getValue().timestamp);
     }
 

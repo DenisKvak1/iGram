@@ -1,22 +1,22 @@
-const path = require('path');
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const path = require("path");
+const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 const PROJECT_NAME = "iGram";
 
 module.exports = {
-    entry: path.resolve(__dirname, 'src'),
+    entry: path.resolve(__dirname, "src"),
 
     output: {
         filename: `${PROJECT_NAME}.js`,
-        path: path.resolve(path.join(__dirname, `../../builds/${PROJECT_NAME}`)),
+        path: path.resolve(path.join(__dirname, `../../builds/${PROJECT_NAME}`))
     },
     devServer: {
         static: path.resolve(__dirname, `./src`),
-        port: 8080,
+        port: 8080
     },
     resolve: {
-        extensions: ['.ts', '.tsx', '.js', '.json']
+        extensions: [".ts", ".tsx", ".js", ".json"]
     },
 
     module: {
@@ -24,26 +24,32 @@ module.exports = {
             {
                 test: /\.(ts|js)x?$/,
                 use: [
-                    {loader: 'babel-loader'},
-                    {loader: 'ts-loader'}
+                    { loader: "babel-loader" },
+                    { loader: "ts-loader" }
                 ],
                 exclude: /node_modules/
             },
             {
                 test: /\.css$/,
-                use: ['style-loader', 'css-loader']
+                use: ["style-loader", "css-loader"]
             },
             {
-                test: /\.ts$/,
-                use: 'ts-loader',
-                exclude: /node_modules/
-            }],
+                test: /\.(png|jpg|gif|svg)$/,
+                use: [
+                    {
+                        loader: "file-loader",
+                        options: {
+                            outputPath: "images"
+                        }
+                    }
+                ]
+            }]
     },
     plugins: [
         new ForkTsCheckerWebpackPlugin(),
         new HtmlWebpackPlugin({
-            template: './src/index.html',
-            inject: 'body',
+            template: "./src/index.html",
+            inject: "body"
             // scriptLoading: 'blocking'
         })
     ]

@@ -11,6 +11,7 @@ import { conditionalRendering } from "../../../../../env/reactivity2.0/condition
 import { Collector } from "../../../../../env/helpers/Collector";
 import { reactivity } from "../../../../../env/reactivity2.0/reactivity";
 import { setupLoadPhotoEvent } from "../../../../../env/helpers/photoLoad";
+import { emojiParser } from "../../modules/EmojiParser";
 
 export class ChatBlock implements iComponent {
     private chatBlock: HTMLElement;
@@ -114,22 +115,24 @@ export class ChatBlock implements iComponent {
     }
 
     private sendMessageFromInput() {
-        const inputMessage = this.toSendBlock.querySelector(".sendBlock input") as HTMLInputElement;
-        if (!inputMessage.value) return;
+        const inputMessage = this.toSendBlock.querySelector(".sendBlock .messageInput") as HTMLInputElement;
+        const parsedMessage = emojiParser.parseFromEmoji(inputMessage.innerHTML);
+        if (!parsedMessage) return;
         currentChatService.pushMessage({
             from: localStorage.getItem("email"),
             to: chatManager.selectChat$.getValue(),
-            text: inputMessage.value
+            text: parsedMessage
         });
-        inputMessage.value = "";
+        inputMessage.innerHTML = "";
     }
 
     private setupSendMessageHandle() {
-        const inputMessage = this.toSendBlock.querySelector(".sendBlock input") as HTMLInputElement;
+        const inputMessage = this.toSendBlock.querySelector(".sendBlock .messageInput") as HTMLInputElement;
         const sendMessageBtn = this.toSendBlock.querySelector(".sendBlock button") as HTMLButtonElement;
 
         inputMessage.onkeydown = (event) => {
             if (event.key === "Enter") {
+                event.preventDefault();
                 this.sendMessageFromInput();
             }
         };

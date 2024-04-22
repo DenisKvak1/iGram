@@ -5,12 +5,11 @@ import { computed } from "../../../env/reactivity2.0/computed";
 import { ReactiveList } from "../../../env/reactivity2.0/reactivityList";
 import { registerReactivityList } from "../../../env/reactivity2.0/registerReactivityList";
 import { server } from "./modules/Server";
-import { messageParser } from "./components/messageBlock/messageParser";
+import { emojiParser } from "./modules/EmojiParser";
 
 let app = AppController.getInstance();
 
-(window as any).messageParser = messageParser;
-
+(window as any).emojiParser = emojiParser;
 (window as any).ReactiveList = ReactiveList;
 (window as any).reactivityList = registerReactivityList;
 
