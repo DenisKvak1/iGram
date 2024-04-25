@@ -1,4 +1,4 @@
-import { iComponent, iSubscribe } from "../../../../../env/types";
+import { iComponent } from "../../../../../env/types";
 import "./style.css";
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { mainPageTemplate } from "./template";
@@ -8,6 +8,9 @@ import { ChatMembersList } from "../../components/chatMembersList/chatMembersLis
 import { ChatBlock } from "../../components/chatBlock/ChatBlock";
 import { ChatSideBar } from "../../components/ChatSidebar/ChatSideBar";
 import { authController } from "../../services/AuthController";
+import { DesktopAdaptive } from "../../modules/adaptive/DesktopAdaptive";
+import { MobileAdaptive } from "../../modules/adaptive/MobileAdaptive";
+
 
 export class MainPage implements iComponent {
     private mainPage: HTMLElement;
@@ -15,7 +18,8 @@ export class MainPage implements iComponent {
     private chatSidePanel: ChatSideBar;
     private chatBlock: ChatBlock;
     private membersList: ChatMembersList;
-    private selectChatSubscription: iSubscribe;
+    private mobileAdaptive: any;
+    private desktopAdaptive: any;
 
     constructor() {
         this.init();
@@ -48,85 +52,14 @@ export class MainPage implements iComponent {
         }
     }
 
-    private setupToChatListEvent() {
-        this.chatBlock.toChatList$.subscribe(() => {
-            this.chatBlock.getComponent().classList.add("noneVisible");
-            this.chatSidePanel.getComponent().classList.remove("noneVisible");
-            let url = new URL(window.location.href);
-
-            url.searchParams.delete("chatID");
-            window.history.replaceState(null, null, url.toString());
-        });
-    }
-
-    private setupToMemberListEvent() {
-        this.chatBlock.toMemberList$.subscribe(() => {
-            this.membersList.getComponent().classList.remove("noneVisible");
-            this.chatBlock.getComponent().classList.add("noneVisible");
-        });
-    }
-
-    private setupToChatEvent() {
-        this.membersList.toChat$.subscribe(() => {
-            this.membersList.getComponent().classList.add("noneVisible");
-            this.chatBlock.getComponent().classList.remove("noneVisible");
-        });
-    }
-
-    private setupSelectChatEvent() {
-        chatManager.selectChat$.subscribe((chatID) => {
-            if (window.innerWidth >= 1200) {
-                if (!chatID) {
-                    this.membersList.getComponent().classList.add("noneVisible");
-                } else {
-                    this.membersList.getComponent().classList.remove("noneVisible");
-                }
-            }
-            if (!chatID) {
-                this.membersList.getComponent().classList.add("noneVisible");
-                return;
-            }
-        });
-    }
-
-    private selectDesktopSize() {
-        if (this.selectChatSubscription) {
-            this.selectChatSubscription.unsubscribe();
-        }
-        this.chatSidePanel.getComponent().classList.remove("noneVisible");
-        this.chatBlock.getComponent().classList.remove("noneVisible");
-        if (!chatManager.selectChat$.getValue()) {
-            this.membersList.getComponent().classList.add("noneVisible");
-        } else {
-            this.membersList.getComponent().classList.remove("noneVisible");
-        }
-    }
-
-    private selectMobileSize() {
-        if (this.selectChatSubscription) {
-            this.selectChatSubscription.unsubscribe();
-        }
-
-        this.selectChatSubscription = chatManager.selectChat$.subscribe(() => {
-            if (!chatManager.selectChat$.getValue()) return;
-            this.chatBlock.getComponent().classList.remove("noneVisible");
-            this.chatSidePanel.getComponent().classList.add("noneVisible");
-        });
-        this.membersList.getComponent().classList.add("noneVisible");
-        if (chatManager.selectChat$.getValue()) {
-            this.chatSidePanel.getComponent().classList.add("noneVisible");
-            this.membersList.getComponent().classList.add("noneVisible");
-        } else {
-            this.chatBlock.getComponent().classList.add("noneVisible");
-            this.membersList.getComponent().classList.add("noneVisible");
-        }
-    }
 
     private selectAdaptiveVersion() {
         if (window.innerWidth <= 1200) {
-            this.selectMobileSize();
+            this.desktopAdaptive.turnOff();
+            this.mobileAdaptive.turnOn();
         } else {
-            this.selectDesktopSize();
+            this.mobileAdaptive.turnOff();
+            this.desktopAdaptive.turnOn();
         }
     }
 
@@ -157,12 +90,10 @@ export class MainPage implements iComponent {
         this.chatSidePanel = new ChatSideBar();
         this.chatBlock = new ChatBlock();
         this.membersList = new ChatMembersList();
+        this.desktopAdaptive = new DesktopAdaptive(this.chatSidePanel, this.chatBlock, this.membersList);
+        this.mobileAdaptive = new MobileAdaptive(this.chatSidePanel, this.chatBlock, this.membersList);
 
         this.membersList.getComponent().classList.add("noneVisible");
-        this.setupSelectChatEvent();
-        this.setupToChatEvent();
-        this.setupToMemberListEvent();
-        this.setupToChatListEvent();
 
         this.checkChatIDRoute(chatID);
 
@@ -187,7 +118,6 @@ export class MainPage implements iComponent {
     }
 
     destroy() {
-        if (this.selectChatSubscription) this.selectChatSubscription.unsubscribe();
         this.mainPage.remove();
     }
 }

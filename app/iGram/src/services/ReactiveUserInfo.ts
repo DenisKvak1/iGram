@@ -8,7 +8,7 @@ export class ReactiveUserInfo implements iReactiveUserInfo {
     email: iObservable<string>;
     name: iObservable<string>;
     friends: iObservable<Array<string>>;
-    photo: iObservable<string>;
+    userPhoto: iObservable<string>;
     lastActivity: iObservable<string>;
 
     constructor(user: UserInfo) {
@@ -24,7 +24,7 @@ export class ReactiveUserInfo implements iReactiveUserInfo {
         this.email = new Observable(user.email);
         this.name = new Observable(user.name);
         this.friends = new Observable(user.friends);
-        this.photo = new Observable(user.photo);
+        this.userPhoto = new Observable(user.photo);
         this.lastActivity = new Observable(user.lastActivity);
     }
 
@@ -48,7 +48,7 @@ export class ReactiveUserInfo implements iReactiveUserInfo {
             userService.setPhoto$.subscribe((user) => {
                 if (user.email !== this.email.getValue()) return;
 
-                this.photo.next(user.photo);
+                this.userPhoto.next(user.photo);
             })
         );
     }

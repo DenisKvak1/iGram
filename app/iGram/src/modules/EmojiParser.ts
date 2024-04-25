@@ -1,9 +1,9 @@
-import { escapeHtml } from "../../../../env/helpers/escapeHTML";
 import { createTemplateFromHTML } from "../../../../env/helpers/createElementFromHTML";
-import likeImageURL from "../assets/images/emojiPack/like.png"
-import dislikeImageURL from "../assets/images/emojiPack/dislike.png"
 
-class EmojiParser {
+import { emojiConfig } from "../../../../env/config";
+import { IEmojiParser } from "../../../../env/types";
+
+class EmojiParser implements IEmojiParser {
     private readonly keySymbol: string;
     private readonly codeBook: { [key: string]: string };
     private readonly dataAttribute: string;
@@ -14,10 +14,14 @@ class EmojiParser {
         this.codeBook = codeBook;
     }
 
+    getEmojiBySymbol(symbol: string) {
+        const parsedString = this.replaceSymbolToImg(symbol, [symbol]);
+        return parsedString;
+    }
+
     parseToEmoji(string: string): string {
-        const validateString = escapeHtml(string);
-        const matchesCode = this.matchCodes(this.keySymbol, validateString);
-        const parsedString = this.replaceSymbolToImg(validateString, matchesCode);
+        const matchesCode = this.matchCodes(this.keySymbol, string);
+        const parsedString = this.replaceSymbolToImg(string, matchesCode);
 
         return parsedString;
     }
@@ -31,7 +35,6 @@ class EmojiParser {
             const regExp = new RegExp(`<img.*?${this.dataAttribute}="${emojiAttribute}".*?>`, "g");
             string = string.replace(regExp, `${this.keySymbol}${emojiAttribute}${this.keySymbol}`);
         });
-        console.log(string)
         return string;
     }
 
@@ -52,13 +55,10 @@ class EmojiParser {
     }
 
     private trimCharacters(string: string) {
-        const tempString = string.replace(new RegExp(this.keySymbol, "g"), "")
-        return tempString
+        const tempString = string.replace(new RegExp(this.keySymbol, "g"), "");
+        return tempString;
     }
 }
 
-const codeBook = {
-    like: likeImageURL,
-    dislike: dislikeImageURL
-};
-export const emojiParser = new EmojiParser("data-emoji", "#", codeBook);
+
+export const emojiParser = new EmojiParser("data-emoji", "#", emojiConfig);

@@ -36,7 +36,6 @@ export class CreateChatList implements iComponent {
         this.initHTML();
         this.initModal();
         this.setupHTMLContent();
-        this.initFriendsList();
         this.setupEvents()
     }
 
@@ -50,7 +49,7 @@ export class CreateChatList implements iComponent {
     }
 
     private setupEvents() {
-        this.openButton.onclick = () => this.openModalHandler();
+        this.openButton.onclick = () => this.clickOpenButtonHandler();
         this.createGroupBtn.onclick = () => this.createChatHandler();
         this.collector.collect(userService.addFriend$.subscribe((user) => this.pushFriendHandler(user)));
     }
@@ -70,18 +69,15 @@ export class CreateChatList implements iComponent {
         this.modal.setOptions({ padding: "0px", maxWidth: "95%" });
     }
 
-    private initFriendsList() {
-        userService.getReactiveFriendsList((friends) => {
-            this.list.set(friends);
-        });
-    }
-
     private pushFriendHandler(user: iReactiveUserInfo) {
         this.list.push(user);
     }
 
-    private openModalHandler() {
+    private clickOpenButtonHandler() {
         this.modal.open();
+        userService.getReactiveFriendsList((friends) => {
+            this.list.set(friends);
+        })
     }
 
     private createChatHandler() {

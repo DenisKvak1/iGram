@@ -6,9 +6,10 @@ import { ReactiveList } from "../../../env/reactivity2.0/reactivityList";
 import { registerReactivityList } from "../../../env/reactivity2.0/registerReactivityList";
 import { server } from "./modules/Server";
 import { emojiParser } from "./modules/EmojiParser";
+import { EmojiPanel } from "./components/emojiPanel/emojiPanel";
 
 let app = AppController.getInstance();
-
+(window as any).EmojiPanel = EmojiPanel;
 (window as any).emojiParser = emojiParser;
 (window as any).ReactiveList = ReactiveList;
 (window as any).reactivityList = registerReactivityList;

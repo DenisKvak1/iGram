@@ -1,0 +1,47 @@
+.emojiPanel {
+    border-radius: 5px;
+    padding: 15px;
+    width: fit-content;
+    background-color: rgb(250, 250, 250);
+}
+.openEmojiBTN{
+    padding: 0;
+    height: 35px;
+    width: 35px;
+    background: none;
+}
+.openEmojiBTN svg, .openEmojiBTN path{
+    width: 35px;
+    height: 100%;
+}
+.emojiPanel_title {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.emojiList {
+    margin-top: 15px;
+    display: grid;
+    gap: 19px;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.selectEmojiy img {
+    height: 100%;
+}
+
+.selectEmojiy {
+    padding: 0;
+    background: none;
+    height: 34px;
+    caret-color: transparent;
+}
+@media (min-width: 1200px) {
+    .openEmojiBTN{
+        height: 40px;
+        width: 40px;
+    }
+    .emojiList {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}

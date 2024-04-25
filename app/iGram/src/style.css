@@ -5,7 +5,7 @@ body{
     padding: 0;
     margin: 0;
 }
-#app input{
+input{
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -14,7 +14,7 @@ body{
     transition: border-color 0.3s ease-in-out;
     width: 100%;
 }
-#app button{
+button{
     cursor: pointer;
     font-size: 14px;
     background-color: rgba(211, 211, 211, 0.267);

@@ -2,7 +2,7 @@ import { LIST_COMMAND, listObserver } from "./types";
 import { iComponent, iObservable } from "../types";
 
 export function registerReactivityList<T>(Component: any, container: HTMLElement, list: listObserver<T>, callback?: (component: iComponent) => void) {
-    const elements: any = [];
+    let elements: any = [];
 
     function createElement(item: iObservable<T>) {
         const component = new Component(item);
@@ -18,6 +18,7 @@ export function registerReactivityList<T>(Component: any, container: HTMLElement
         elements.forEach((element: any) => {
             element.destroy();
         });
+        elements = [];
         list.forEach((item) => {
             const element = createElement(item);
             container.appendChild(element);

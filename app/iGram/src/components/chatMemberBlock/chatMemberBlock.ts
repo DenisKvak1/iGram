@@ -46,7 +46,7 @@ export class ChatMemberBlock implements iComponent {
         });
 
         this.collector.collect(
-            reactivityAttribute(this.user.photo, this.memberPhoto, "src"),
+            reactivityAttribute(this.user.userPhoto, this.memberPhoto, "src"),
             reactivity(this.user.name, this.memberName),
             reactivity(activityComputed.observer, this.memberActivity),
             activityComputed.subscribe

@@ -8,6 +8,7 @@ import {
     serverWS_COMMANDS
 } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
+import { Config } from "../../../../env/config";
 
 export class Server implements iServer {
     url: string;
@@ -147,4 +148,4 @@ export class Server implements iServer {
     }
 }
 
-export const server = new Server("http://127.0.0.1:3000", "ws:///127.0.0.1:3000");
+export const server = new Server(Config.HTTP_ADDRESS, Config.WS_ADDRESS);

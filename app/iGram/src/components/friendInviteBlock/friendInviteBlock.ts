@@ -45,7 +45,7 @@ export class FriendInviteBlock implements iComponent {
 
     private setupHTMLContent() {
         this.collector.collect(
-            reactivityAttribute(this.user.photo, this.memberPhoto, "src"),
+            reactivityAttribute(this.user.userPhoto, this.memberPhoto, "src"),
             reactivity(this.user.name, this.userName)
         );
     }

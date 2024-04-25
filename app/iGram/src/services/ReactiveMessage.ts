@@ -10,6 +10,7 @@ export class ReactiveMessage implements iReactiveMessage {
     to: string;
     text: iObservable<string>;
     timestamp: string;
+    photo: iObservable<string>
 
     constructor(msg: message) {
         this.msg = msg;
@@ -26,6 +27,7 @@ export class ReactiveMessage implements iReactiveMessage {
         this.to = this.msg.to;
         this.text = new Observable(this.msg.text);
         this.timestamp = this.msg.timestamp;
+        this.photo = new Observable(this.msg.photo)
     }
 
     private setupRefUpdate() {

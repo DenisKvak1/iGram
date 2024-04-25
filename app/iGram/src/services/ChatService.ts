@@ -5,7 +5,7 @@ import {
     IChatManager,
     IChatService,
     iObservable,
-    iReactiveChatInfo,
+    iReactiveChatInfo, iServer,
     message,
     messageClient,
     serverWS_COMMANDS,
@@ -19,13 +19,15 @@ import { ReactiveUserInfo } from "./ReactiveUserInfo";
 import { server } from "../modules/Server";
 
 export class CurrentChatService implements IChatService {
+    private server: iServer;
     load$ = new Observable<boolean>(false);
     chat$ = new Observable<iReactiveChatInfo>();
     pushMessage$: iObservable<message>;
     setPhoto$: iObservable<{ chatID: string, photo: string }>;
     addMember$: iObservable<UserInfo>;
 
-    constructor() {
+    constructor(server: iServer) {
+        this.server = server;
 
         this.init();
     }
@@ -59,7 +61,7 @@ export class CurrentChatService implements IChatService {
 
     addUser(login: string): void {
         const selectChat = chatManager.selectChat$.getValue();
-        server.push({
+        this.server.push({
             command: serverWS_COMMANDS.FRIEND_ADD_TO_CHAT,
             payload: {
                 chatID: selectChat,
@@ -69,7 +71,7 @@ export class CurrentChatService implements IChatService {
     }
 
     pushMessage(message: messageClient): void {
-        server.push({
+        this.server.push({
             command: serverWS_COMMANDS.MESSAGE,
             payload: message
         });
@@ -78,7 +80,7 @@ export class CurrentChatService implements IChatService {
 
     setPhoto(photo: ArrayBuffer): void {
         const selectChat = chatManager.selectChat$.getValue();
-        server.push({
+        this.server.push({
             command: serverWS_COMMANDS.SET_CHAT_PHOTO,
             payload: {
                 photo,
@@ -89,7 +91,7 @@ export class CurrentChatService implements IChatService {
 
     leaveChat(): void {
         const selectChat = chatManager.selectChat$.getValue();
-        server.push({
+        this.server.push({
             command: serverWS_COMMANDS.LEAVE_CHAT,
             payload: {
                 chatID: selectChat
@@ -120,6 +122,7 @@ export class CurrentChatService implements IChatService {
 }
 
 export class ChatManager implements IChatManager {
+    private server: iServer
     chatCreated$: iObservable<fromChat>;
     message$: iObservable<message>;
     leaveChat$: iObservable<ChatUserInfo>;
@@ -127,7 +130,9 @@ export class ChatManager implements IChatManager {
     selectChat$: iObservable<string>;
     setPhoto$: iObservable<{ chatID: string, photo: string }>;
 
-    constructor() {
+    constructor(server:iServer) {
+        this.server = server
+
         this.init();
     }
 
@@ -154,7 +159,7 @@ export class ChatManager implements IChatManager {
     }
 
     createChat(logins: Array<string>, chatName: string): void {
-        server.push({
+        this.server.push({
             command: serverWS_COMMANDS.CHAT_CREATED,
             payload: {
                 chatName,
@@ -164,12 +169,12 @@ export class ChatManager implements IChatManager {
     }
 
     async getChats() {
-        const chats = await server.getChats();
+        const chats = await this.server.getChats();
         return chats.data;
     }
 
     async getReactiveChats() {
-        const chats = await server.getChats();
+        const chats = await this.server.getChats();
         const reactiveChat = chats.data.map((chat: iChat) => new ReactiveChatData(chat));
         return reactiveChat;
     }
@@ -190,7 +195,7 @@ export class ChatManager implements IChatManager {
     }
 
     private setupChatCreateEvent() {
-        server.event$.subscribe((msg) => {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.CHAT_CREATED) return;
 
             const chat = new ReactiveChatData(msg.payload.chat);
@@ -199,7 +204,7 @@ export class ChatManager implements IChatManager {
     }
 
     private setupLeaveChatEvent(): void {
-        server.event$.subscribe((msg) => {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.LEAVE_CHAT) return;
             const message = {
                 chatID: msg.payload.chatID,
@@ -210,7 +215,7 @@ export class ChatManager implements IChatManager {
     }
 
     private setupMessageEvent(): void {
-        server.event$.subscribe((msg) => {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.MESSAGE) return;
 
             this.message$.next(msg.payload as message);
@@ -218,7 +223,7 @@ export class ChatManager implements IChatManager {
     }
 
     private setupAddMemberEvent(): void {
-        server.event$.subscribe((msg) => {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.FRIEND_ADD_TO_CHAT) return;
             const message = {
                 chatID: msg.payload.chatID,
@@ -229,7 +234,7 @@ export class ChatManager implements IChatManager {
     }
 
     private setupSetPhotoEvent(): void {
-        server.event$.subscribe((msg) => {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.SET_CHAT_PHOTO) return;
 
             this.setPhoto$.next(msg.payload as any);
@@ -237,5 +242,5 @@ export class ChatManager implements IChatManager {
     }
 }
 
-export const chatManager = new ChatManager();
-export const currentChatService = new CurrentChatService();
+export const chatManager = new ChatManager(server);
+export const currentChatService = new CurrentChatService(server);

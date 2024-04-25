@@ -20,16 +20,38 @@
 .chatItemBlock {
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
+
 .chat_name {
     font-weight: 600;
     font-size: 18.75px;
 }
 .last_message {
     font-size: 18.75px;
+    overflow: hidden;
+    width: 80%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.last_message img{
+    height: 20px;
+    vertical-align: bottom;
 }
 .chatPhotoInList {
     height: 100%;
     width: 60.5px;
     border-radius: 50%;
+}
+@media (min-width: 1200px) {
+    .chatItemBlock {
+        width: auto;
+    }
+    .last_message{
+        width: 250px;
+        font-size: 18px;
+    }
+    .last_message img{
+        height: 24px;
+    }
 }

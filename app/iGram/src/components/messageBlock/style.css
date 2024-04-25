@@ -1,0 +1,40 @@
+.imageToModal {
+    max-height: 500px;
+    max-width: 350px;
+}
+@media (min-width: 390px) {
+    .imageToModal {
+        max-height: 550px;
+        max-width: 370px;
+    }
+}
+@media (min-width: 420px) {
+    .imageToModal {
+        max-height: 600px;
+        max-width: 400px;
+    }
+}
+@media (min-width: 620px) {
+    .imageToModal {
+        max-height: 630px;
+        max-width: 500px;
+    }
+}
+@media (min-width: 820px) {
+    .imageToModal {
+        max-height: 650px;
+        max-width: 600px;
+    }
+}
+@media (min-width: 1000px) {
+    .imageToModal {
+        max-height: 680px;
+        max-width: 700px;
+    }
+}
+@media (min-width: 1200px) {
+    .imageToModal {
+        max-height: 700px;
+        max-width: 900px;
+    }
+}

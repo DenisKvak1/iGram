@@ -39,7 +39,7 @@ export class UserCheckBoxBlock implements iComponent {
     private setupHTMLContent() {
         this.collector.collect(
             reactivity(this.user.name, this.chatName),
-            reactivityAttribute(this.user.photo, this.userPhoto, "src")
+            reactivityAttribute(this.user.userPhoto, this.userPhoto, "src")
         );
     }
 

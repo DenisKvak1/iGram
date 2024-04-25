@@ -126,6 +126,7 @@ export type iReactiveMessage = {
     from: iReactiveUserInfo
     to: string
     text: iObservable<string>
+    photo: iObservable<string>
     timestamp: string
     destroy: () => void
 };
@@ -156,7 +157,7 @@ export type iReactiveUserInfo = {
     email: iObservable<string>
     name: iObservable<string>
     friends: iObservable<Array<string>>
-    photo: iObservable<string>
+    userPhoto: iObservable<string>
     lastActivity: iObservable<string>
     destroy: () => void
 }
@@ -181,13 +182,14 @@ export type serverMessage = {
         accept?: boolean
         chatID?: string
         timestamp?: string
-        photo?: ArrayBuffer,
+        photo?: ArrayBuffer | string,
         user?: UserInfo
     }
 }
 export type message = {
     from: UserInfo,
     to?: string,
+    photo?: string,
     text: string,
     timestamp: string
 }
@@ -195,7 +197,16 @@ export type messageClient = {
     from: string,
     to?: string,
     text: string,
+    photo?: string | ArrayBuffer,
     timestamp?: string
+}
+export type IEmojiParser = {
+    getEmojiBySymbol(symbol: string): string
+    parseToEmoji(string: string): string
+    parseFromEmoji(string: string): string
+}
+export type IMessageParser = {
+    parseMessage(string: string):string
 }
 // export const enum MESSAGE_STATE {
 //     PENDING = "PENDING",
@@ -247,6 +258,11 @@ export type IChatManager = {
 export type IAppController = {
     root: HTMLElement
 }
+export type iPopover = {
+    open: () => void,
+    close: () => void,
+    toggle: () => void
+}
 export type authBlockOptions = {
     buttonName: string
     inputs: Array<authBlockInput>
@@ -271,6 +287,8 @@ export type iModal = {
     destroy: () => void;
 }
 export type IModalOptions = {
+    boxShadow?: string,
+    background?: string
     width?: number;
     maxWidth?: string
     height?: number;
@@ -287,6 +305,7 @@ export type iModalOptionsFunc = {
     height?: (height: number) => void;
     maxHeight?: (maxHeight: string) => void;
     bgColor?: (color: string) => void;
+    background: (color: string) => void,
     bgOverlayColor?: (color: number) => void;
     [key: string]: (argument: string | number) => void
 }

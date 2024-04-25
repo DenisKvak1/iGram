@@ -2,10 +2,11 @@ import { iComponent, iObservable, iReactiveChatInfo } from "../../../../../env/t
 import { createElementFromHTML } from "../../../../../env/helpers/createElementFromHTML";
 import { chatElementT } from "./template";
 import { reactivityAttribute } from "../../../../../env/reactivity2.0/reactivityAttribute";
-import { reactivity } from "../../../../../env/reactivity2.0/reactivity";
+import { reactivity, reactivityHTML } from "../../../../../env/reactivity2.0/reactivity";
 import { computed } from "../../../../../env/reactivity2.0/computed";
 import { chatManager } from "../../services/ChatService";
 import { Collector } from "../../../../../env/helpers/Collector";
+import { messageParser } from "../../services/messageParser";
 
 export class ChatShortcutBlock implements iComponent {
     private chat: iObservable<iReactiveChatInfo>;
@@ -38,13 +39,16 @@ export class ChatShortcutBlock implements iComponent {
         const { observer: lastMessage, subscribe: computedSubscribe } = computed(this.chat.getValue().history, () => {
             const lastMessageIndex = this.chat.getValue().history.getValue().length - 1;
             const historyMessage = this.chat.getValue().history.getValue();
-            return historyMessage[lastMessageIndex]?.getValue().text;
+            const text = historyMessage[lastMessageIndex]?.getValue().text.getValue();
+
+            return messageParser.parseMessage(text || "");
         });
+
         this.collector.collect(
             computedSubscribe,
             reactivityAttribute(this.chat.getValue().photo, this.avatar, "src"),
             reactivity(this.chat.getValue().chatName, this.chatName),
-            reactivity(lastMessage, this.lastMessageBlock)
+            reactivityHTML(lastMessage, this.lastMessageBlock)
         );
     }
 
@@ -61,13 +65,9 @@ export class ChatShortcutBlock implements iComponent {
         return this.chatBlock;
     }
 
-    private clearListeners() {
-        this.collector.clear();
-        this.chat.getValue().destroy();
-    }
 
     destroy(): void {
-        this.clearListeners();
+        this.collector.clear();
         this.chatBlock.remove();
     }
 }

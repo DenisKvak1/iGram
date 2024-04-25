@@ -1,15 +1,18 @@
-import { iReactiveUserInfo, IUserService, serverWS_COMMANDS, UserInfo } from "../../../../env/types";
+import { iReactiveUserInfo, iServer, IUserService, serverWS_COMMANDS, UserInfo } from "../../../../env/types";
 import { Observable } from "../../../../env/helpers/observable";
 import { ReactiveUserInfo } from "./ReactiveUserInfo";
 import { server } from "../modules/Server";
 
 export class UserService implements IUserService {
+    private server: iServer;
     setPhoto$ = new Observable<UserInfo>();
-    activity$ = new Observable<UserInfo>()
+    activity$ = new Observable<UserInfo>();
     friendRequest$ = new Observable<iReactiveUserInfo>();
-    addFriend$ = new Observable<iReactiveUserInfo>()
+    addFriend$ = new Observable<iReactiveUserInfo>();
 
-    constructor() {
+    constructor(server: iServer) {
+        this.server = server;
+
         this.init();
     }
 
@@ -21,11 +24,11 @@ export class UserService implements IUserService {
         this.setupSetPhotoEvent();
         this.setupSetActivityEvent();
         this.setupFriendRequestEvent();
-        this.setupPushFriend()
+        this.setupPushFriend();
     }
 
     setPhoto(photo: ArrayBuffer): void {
-        server.push({
+        this.server.push({
             command: serverWS_COMMANDS.SET_USER_PHOTO,
             payload: {
                 photo
@@ -34,7 +37,7 @@ export class UserService implements IUserService {
     }
 
     friendRequest(login: string): void {
-        server.push({
+        this.server.push({
             command: serverWS_COMMANDS.FRIEND_REQUEST,
             payload: {
                 login
@@ -43,7 +46,7 @@ export class UserService implements IUserService {
     }
 
     friendResponse(login: string, accept: boolean): void {
-        server.push({
+        this.server.push({
             command: serverWS_COMMANDS.FRIEND_RESPONSE,
             payload: {
                 login,
@@ -53,7 +56,7 @@ export class UserService implements IUserService {
     }
 
     getFriendsList(callback: (FriendList: Array<UserInfo>) => void): void {
-        server.getFriendsList().then((msg) => {
+        this.server.getFriendsList().then((msg) => {
             callback(msg.requests);
         });
     }
@@ -66,7 +69,7 @@ export class UserService implements IUserService {
     }
 
     getFriendsInviteList(callback: (FriendInviteList: Array<UserInfo>) => void): void {
-        server.getFriendsInvites().then((msg) => {
+        this.server.getFriendsInvites().then((msg) => {
             callback(msg.requests);
         });
     }
@@ -79,14 +82,14 @@ export class UserService implements IUserService {
     }
 
     getUserInfo(login: string, callback: (UserInfo: UserInfo) => void): void {
-        server.getUserInfo(login).then((msg) => {
+        this.server.getUserInfo(login).then((msg) => {
             callback(msg.user);
         });
     }
 
 
     private setupSetPhotoEvent(): void {
-        server.event$.subscribe((msg) => {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.SET_USER_PHOTO) return;
 
             this.setPhoto$.next(msg.payload.user);
@@ -94,7 +97,7 @@ export class UserService implements IUserService {
     }
 
     private setupFriendRequestEvent(): void {
-        server.event$.subscribe((msg) => {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.FRIEND_REQUEST) return;
 
             const reactiveUser = new ReactiveUserInfo(msg.payload.from as UserInfo);
@@ -103,22 +106,22 @@ export class UserService implements IUserService {
     }
 
     private setupSetActivityEvent(): void {
-        server.event$.subscribe((msg) => {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.ACTIVITY) return;
 
             this.activity$.next(msg.payload.user);
         });
     }
 
-    private setupPushFriend(){
-        server.event$.subscribe((msg) => {
+    private setupPushFriend() {
+        this.server.event$.subscribe((msg) => {
             if (msg.command !== serverWS_COMMANDS.ADD_FRIEND) return;
 
-            const reactiveUser = new ReactiveUserInfo(msg.payload.user)
+            const reactiveUser = new ReactiveUserInfo(msg.payload.user);
             this.addFriend$.next(reactiveUser);
         });
 
     }
 }
 
-export const userService = new UserService();
+export const userService = new UserService(server);
