@@ -6,7 +6,7 @@ import { reactivity, reactivityHTML } from "../../../../../env/reactivity2.0/rea
 import { computed } from "../../../../../env/reactivity2.0/computed";
 import { chatManager } from "../../services/ChatService";
 import { Collector } from "../../../../../env/helpers/Collector";
-import { messageParser } from "../../services/messageParser";
+import { inputMessageParser } from "../../services/InputMessageParser";
 
 export class ChatShortcutBlock implements iComponent {
     private chat: iObservable<iReactiveChatInfo>;
@@ -41,7 +41,7 @@ export class ChatShortcutBlock implements iComponent {
             const historyMessage = this.chat.getValue().history.getValue();
             const text = historyMessage[lastMessageIndex]?.getValue().text.getValue();
 
-            return messageParser.parseMessage(text || "");
+            return inputMessageParser.parseMessage(text || "");
         });
 
         this.collector.collect(

@@ -205,8 +205,11 @@ export type IEmojiParser = {
     parseToEmoji(string: string): string
     parseFromEmoji(string: string): string
 }
-export type IMessageParser = {
-    parseMessage(string: string):string
+export type IInputMessageParser = {
+    parseMessage(string: string): string
+}
+export type IOutputMessageParser = {
+    parseMessage(string: string): string
 }
 // export const enum MESSAGE_STATE {
 //     PENDING = "PENDING",

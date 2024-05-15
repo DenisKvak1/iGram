@@ -6,7 +6,7 @@ import { reactivity, reactivityHTML } from "../../../../../env/reactivity2.0/rea
 import { reactivityAttribute } from "../../../../../env/reactivity2.0/reactivityAttribute";
 import { Collector } from "../../../../../env/helpers/Collector";
 import { computed } from "../../../../../env/reactivity2.0/computed";
-import { messageParser } from "../../services/messageParser";
+import { inputMessageParser } from "../../services/InputMessageParser";
 import { messageFromT, messageMeT } from "./template";
 import { Modal } from "../modal/Modal";
 import { createElement } from "../../../../../env/helpers/createDOMElements";
@@ -51,7 +51,7 @@ export class MessageBlock implements iComponent {
         const { text, from, photo } = messageValue;
         const { userPhoto, name } = from;
 
-        const messageTextComputed = computed(text, () => messageParser.parseMessage(text.getValue()));
+        const messageTextComputed = computed(text, () => inputMessageParser.parseMessage(text.getValue()));
         this.collector.collect(
             reactivityHTML(messageTextComputed.observer, this.messageText),
             reactivity(name, this.nameBlock),

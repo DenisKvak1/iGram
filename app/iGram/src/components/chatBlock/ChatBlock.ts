@@ -15,6 +15,7 @@ import { emojiParser } from "../../modules/EmojiParser";
 import { isHTMLEmpty } from "../../../../../env/helpers/isEmptyHTML";
 import { EmojiPanel } from "../emojiPanel/emojiPanel";
 import { emojiConfig } from "../../../../../env/config";
+import { outputMessageParser } from "../../services/OutputMessageParser";
 
 export class ChatBlock implements iComponent {
     private chatBlock: HTMLElement;
@@ -154,7 +155,7 @@ export class ChatBlock implements iComponent {
     }
 
     private sendMessageFromInput() {
-        const parsedMessage = emojiParser.parseFromEmoji(this.inputMessage.innerHTML);
+        const parsedMessage = outputMessageParser.parseMessage(this.inputMessage.innerHTML);
 
         this.messageToSend.from = localStorage.getItem("email");
         this.messageToSend.to = chatManager.selectChat$.getValue();

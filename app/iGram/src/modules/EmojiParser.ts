@@ -3,6 +3,8 @@ import { createTemplateFromHTML } from "../../../../env/helpers/createElementFro
 import { emojiConfig } from "../../../../env/config";
 import { IEmojiParser } from "../../../../env/types";
 
+
+
 class EmojiParser implements IEmojiParser {
     private readonly keySymbol: string;
     private readonly codeBook: { [key: string]: string };
@@ -38,7 +40,7 @@ class EmojiParser implements IEmojiParser {
         return string;
     }
 
-    private replaceSymbolToImg(string: string, matchStrings: string[]) {
+    private replaceSymbolToImg(string: string, matchStrings: string[]): string {
         let tempString = string;
         matchStrings?.forEach((item) => {
             const symbol = this.trimCharacters(item);

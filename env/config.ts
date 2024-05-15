@@ -8,8 +8,8 @@ import laughingImageURL from "../app/iGram/src/assets/images/emojiPack/laughing.
 import funnyMerchantImageURL from "../app/iGram/src/assets/images/emojiPack/funnyMerchant.png";
 import rainBowlikeImageURL from "../app/iGram/src/assets/images/emojiPack/like.gif"
 export enum Config {
-    HTTP_ADDRESS = "http://192.168.0.161:3000",
-    WS_ADDRESS = "ws:///192.168.0.161:3000",
+    HTTP_ADDRESS = "http://127.0.0.1:3000",
+    WS_ADDRESS = "ws:///127.0.0.1:3000",
 }
 
 export const emojiConfig = {
