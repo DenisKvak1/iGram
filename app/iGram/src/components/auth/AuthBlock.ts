@@ -41,10 +41,10 @@ export class AuthBlock implements iComponent {
 
     private registerBlockEventHandler(data: any) {
         authController.register({
-            email: data.payload.credentials.email,
-            password: data.payload.credentials.password
+            email: data.credentials.email,
+            password: data.credentials.password
         }, {
-            name: data.payload.credentials.name
+            name: data.credentials.name
         }, data.errorCallback);
     }
 
